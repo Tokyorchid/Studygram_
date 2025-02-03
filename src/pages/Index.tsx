@@ -15,19 +15,42 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
+  const loadingTexts = [
+    "bestie wait a sec ✨",
+    "manifesting your success rn 🌟",
+    "loading good vibes only ~",
+    "spilling the tea... ☕",
+    "it's giving... loading 💅",
+    "no thoughts, just loading 🧠",
+    "main character moment loading...",
+    "slaying the loading game 💁‍♀️"
+  ];
+
+  const [currentTextIndex, setCurrentTextIndex] = useState(0);
+
   useEffect(() => {
-    const timer = setInterval(() => {
+    const textInterval = setInterval(() => {
+      setCurrentTextIndex((prev) => (prev + 1) % loadingTexts.length);
+    }, 2000);
+
+    const progressInterval = setInterval(() => {
       setProgress((oldProgress) => {
         if (oldProgress === 100) {
-          clearInterval(timer);
-          setTimeout(() => setLoading(false), 500);
+          clearInterval(progressInterval);
+          clearInterval(textInterval);
+          setTimeout(() => {
+            setLoading(false);
+          }, 1000); // Add delay before transition
           return 100;
         }
         return oldProgress + 1;
       });
     }, 30);
 
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(progressInterval);
+      clearInterval(textInterval);
+    };
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -42,14 +65,17 @@ const Index = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-black">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-black transition-all duration-1000">
         <div className="w-full max-w-md mx-auto text-center space-y-8">
           <h1 className="text-6xl font-bold bg-gradient-to-r from-purple-400 to-pink-600 text-transparent bg-clip-text animate-pulse">
             Studygram
           </h1>
-          <div className="space-y-4">
-            <Progress value={progress} className="h-2 w-full" />
-            <p className="text-4xl font-bold text-white">{progress}%</p>
+          <div className="space-y-8">
+            <Progress value={progress} className="h-2 w-full bg-gray-800" />
+            <p className="text-4xl font-bold text-white mb-4">{progress}%</p>
+            <p className="text-xl text-purple-400 font-medium animate-bounce">
+              {loadingTexts[currentTextIndex]}
+            </p>
           </div>
         </div>
       </div>
@@ -57,7 +83,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-black p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-black p-4 animate-fade-in">
       {/* Decorative elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/30 rounded-full mix-blend-overlay filter blur-xl opacity-70 animate-blob"></div>
