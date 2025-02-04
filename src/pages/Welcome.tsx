@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 interface NavItemProps {
   icon: React.ReactNode;
   text: string;
+  to: string;
   active?: boolean;
 }
 
@@ -47,12 +48,12 @@ const Welcome = () => {
         </div>
 
         <nav className="space-y-4">
-          <NavItem icon={<Home />} text="Home" active />
-          <NavItem icon={<TrendingUp />} text="Progress" />
-          <NavItem icon={<BookOpen />} text="Study Sessions" />
-          <NavItem icon={<MessageSquare />} text="Messages" />
-          <NavItem icon={<User />} text="Profile" />
-          <NavItem icon={<Settings />} text="Settings" />
+          <NavItem icon={<Home />} text="Home" to="/welcome" active />
+          <NavItem icon={<TrendingUp />} text="Progress" to="/progress" />
+          <NavItem icon={<BookOpen />} text="Study Sessions" to="/study-sessions" />
+          <NavItem icon={<MessageSquare />} text="Messages" to="/messages" />
+          <NavItem icon={<User />} text="Profile" to="/profile" />
+          <NavItem icon={<Settings />} text="Settings" to="/settings" />
         </nav>
       </motion.div>
 
@@ -153,9 +154,9 @@ const Welcome = () => {
   );
 };
 
-const NavItem = ({ icon, text, active = false }: NavItemProps) => (
+const NavItem = ({ icon, text, to, active = false }: NavItemProps) => (
   <Link
-    to="#"
+    to={to}
     className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
       active 
         ? "bg-purple-500/20 text-purple-400" 
