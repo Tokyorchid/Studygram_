@@ -1,15 +1,15 @@
+import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { BarChart, LineChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Button } from "@/components/ui/button";
 
 const data = [
-  { name: 'Mon', study: 4, focus: 3.5 },
-  { name: 'Tue', study: 3, focus: 2.8 },
-  { name: 'Wed', study: 5, focus: 4.2 },
-  { name: 'Thu', study: 2.5, focus: 2 },
-  { name: 'Fri', study: 4.8, focus: 4.5 },
-  { name: 'Sat', study: 6, focus: 5.5 },
-  { name: 'Sun', study: 3.2, focus: 3 },
+  { name: 'Mon', study: 4, focus: 3.5, mood: 85 },
+  { name: 'Tue', study: 3, focus: 2.8, mood: 75 },
+  { name: 'Wed', study: 5, focus: 4.2, mood: 90 },
+  { name: 'Thu', study: 2.5, focus: 2, mood: 65 },
+  { name: 'Fri', study: 4.8, focus: 4.5, mood: 95 },
+  { name: 'Sat', study: 6, focus: 5.5, mood: 100 },
+  { name: 'Sun', study: 3.2, focus: 3, mood: 80 },
 ];
 
 const Progress = () => {
@@ -48,8 +48,20 @@ const Progress = () => {
                   }}
                 />
                 <Legend />
-                <Line type="monotone" dataKey="study" stroke="#8B5CF6" strokeWidth={2} />
-                <Line type="monotone" dataKey="focus" stroke="#EC4899" strokeWidth={2} />
+                <Line 
+                  type="monotone" 
+                  dataKey="study" 
+                  stroke="#8B5CF6" 
+                  strokeWidth={2}
+                  name="Study Hours"
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="focus" 
+                  stroke="#EC4899" 
+                  strokeWidth={2}
+                  name="Focus Score"
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -58,29 +70,28 @@ const Progress = () => {
           </p>
         </div>
 
-        {/* Subject Performance */}
+        {/* Mood Tracker */}
         <div className="bg-gray-900/50 backdrop-blur-xl rounded-xl p-6 border border-purple-500/20">
-          <h2 className="text-xl font-semibold mb-6">Subject Breakdown</h2>
-          <div className="h-[300px]">
+          <h2 className="text-xl font-semibold mb-6">Mood Journey</h2>
+          <div className="h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={[
-                { subject: 'Math', score: 85 },
-                { subject: 'Science', score: 92 },
-                { subject: 'History', score: 78 },
-                { subject: 'English', score: 88 },
-                { subject: 'Art', score: 95 },
-              ]}>
+              <BarChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="subject" stroke="#9CA3AF" />
+                <XAxis dataKey="name" stroke="#9CA3AF" />
                 <YAxis stroke="#9CA3AF" />
-                <Tooltip 
-                  contentStyle={{ 
+                <Tooltip
+                  contentStyle={{
                     backgroundColor: '#1F2937',
                     border: '1px solid rgba(139, 92, 246, 0.2)',
                     borderRadius: '0.5rem'
                   }}
                 />
-                <Bar dataKey="score" fill="url(#colorGradient)" />
+                <Bar 
+                  dataKey="mood" 
+                  fill="url(#colorGradient)" 
+                  name="Mood Score"
+                  radius={[4, 4, 0, 0]}
+                />
                 <defs>
                   <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#8B5CF6" />
@@ -93,6 +104,42 @@ const Progress = () => {
           <p className="text-sm text-gray-400 mt-4 text-center italic">
             "The best moment is yet to come" - keep pushing! 💫
           </p>
+        </div>
+
+        {/* Achievement Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            className="bg-gray-900/50 backdrop-blur-xl rounded-xl p-6 border border-purple-500/20"
+          >
+            <h3 className="text-lg font-semibold mb-2">Longest Study Streak</h3>
+            <p className="text-3xl font-bold text-purple-400">7 Days</p>
+            <p className="text-sm text-gray-400 mt-2">
+              "Make it right, make it shine" - you're doing amazing!
+            </p>
+          </motion.div>
+          
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            className="bg-gray-900/50 backdrop-blur-xl rounded-xl p-6 border border-purple-500/20"
+          >
+            <h3 className="text-lg font-semibold mb-2">Average Focus Score</h3>
+            <p className="text-3xl font-bold text-pink-400">4.2/5</p>
+            <p className="text-sm text-gray-400 mt-2">
+              "Focus on your dreams" - keep that concentration!
+            </p>
+          </motion.div>
+          
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            className="bg-gray-900/50 backdrop-blur-xl rounded-xl p-6 border border-purple-500/20"
+          >
+            <h3 className="text-lg font-semibold mb-2">Total Study Hours</h3>
+            <p className="text-3xl font-bold text-purple-400">28.5</p>
+            <p className="text-sm text-gray-400 mt-2">
+              "We are bulletproof" - nothing can stop you!
+            </p>
+          </motion.div>
         </div>
       </motion.div>
     </div>
