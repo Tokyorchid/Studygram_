@@ -39,12 +39,20 @@ const Welcome = () => {
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold mb-2">✨ Hey bestie!</h1>
-              <p className="text-gray-400">ready to crush those study goals? 💪</p>
+              <h1 className="text-3xl font-bold mb-2">✨ Yo, what's good!</h1>
+              <p className="text-gray-400">time to level up your study game fr fr 💪</p>
             </div>
             <Button className="bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90">
-              Start Session
+              Start Grinding
             </Button>
+          </div>
+
+          {/* Inspiration Quote */}
+          <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 p-6 rounded-xl border border-purple-500/20">
+            <p className="text-lg italic text-gray-300">
+              "Even when winter comes, don't fear the cold" - Spring Day, BTS
+            </p>
+            <p className="text-sm text-gray-400 mt-2">your daily dose of motivation ✨</p>
           </div>
 
           {/* Stats Grid */}
@@ -54,39 +62,42 @@ const Welcome = () => {
               value="7 days" 
               icon={<TrendingUp className="w-6 h-6" />}
               color="from-purple-500 to-pink-500"
+              note="no cap, you're on fire! 🔥"
             />
             <StatsCard 
               title="Focus Time" 
               value="4.2 hrs" 
               icon={<BarChart3 className="w-6 h-6" />}
               color="from-blue-500 to-purple-500"
+              note="slay! that's the vibe 💫"
             />
             <StatsCard 
               title="Tasks Done" 
               value="12" 
               icon={<BookOpen className="w-6 h-6" />}
               color="from-pink-500 to-orange-500"
+              note="you're eating this up! 🌟"
             />
           </div>
 
           {/* Recent Activity */}
           <div className="bg-gray-900/50 backdrop-blur-xl rounded-xl p-6 border border-purple-500/20">
-            <h2 className="text-xl font-semibold mb-4">🔥 Recent Activity</h2>
+            <h2 className="text-xl font-semibold mb-4">🔥 The Tea</h2>
             <div className="space-y-4">
               <ActivityItem 
                 title="Finished Math Chapter 5"
-                time="2 hours ago"
-                tag="Mathematics"
+                time="2 hrs ago"
+                tag="Math Queen"
               />
               <ActivityItem 
-                title="Created Study Group"
-                time="5 hours ago"
-                tag="Collaboration"
+                title="Created Study Squad"
+                time="5 hrs ago"
+                tag="Squad Goals"
               />
               <ActivityItem 
-                title="Completed Quiz"
+                title="Aced That Quiz"
                 time="Yesterday"
-                tag="Assessment"
+                tag="Big Brain Energy"
               />
             </div>
           </div>
@@ -96,14 +107,16 @@ const Welcome = () => {
             <h2 className="text-xl font-semibold mb-4">👥 Study Squads</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <StudyGroupCard 
-                name="Math Wizards 🧙‍♂️"
+                name="Math Besties 🧮"
                 members={5}
                 active={true}
+                note=""Yet to Come" - your grades after joining this squad"
               />
               <StudyGroupCard 
-                name="Science Gang 🔬"
+                name="Science Gang 🧪"
                 members={3}
                 active={false}
+                note=""Mic Drop" - you after acing that test"
               />
             </div>
           </div>
@@ -127,13 +140,14 @@ const NavItem = ({ icon, text, active = false }) => (
   </Link>
 );
 
-const StatsCard = ({ title, value, icon, color }) => (
+const StatsCard = ({ title, value, icon, color, note }) => (
   <div className="bg-gray-900/50 backdrop-blur-xl rounded-xl p-6 border border-purple-500/20">
     <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${color} flex items-center justify-center mb-4`}>
       {icon}
     </div>
     <h3 className="text-gray-400 mb-1">{title}</h3>
     <p className="text-2xl font-bold">{value}</p>
+    <p className="text-sm text-gray-400 mt-2 italic">{note}</p>
   </div>
 );
 
@@ -149,13 +163,16 @@ const ActivityItem = ({ title, time, tag }) => (
   </div>
 );
 
-const StudyGroupCard = ({ name, members, active }) => (
-  <div className="bg-gray-800/50 rounded-lg p-4 flex items-center justify-between">
-    <div>
-      <h4 className="font-medium">{name}</h4>
-      <p className="text-sm text-gray-400">{members} members</p>
+const StudyGroupCard = ({ name, members, active, note }) => (
+  <div className="bg-gray-800/50 rounded-lg p-4">
+    <div className="flex items-center justify-between mb-2">
+      <div>
+        <h4 className="font-medium">{name}</h4>
+        <p className="text-sm text-gray-400">{members} members</p>
+      </div>
+      <div className={`w-3 h-3 rounded-full ${active ? "bg-green-500" : "bg-gray-500"}`} />
     </div>
-    <div className={`w-3 h-3 rounded-full ${active ? "bg-green-500" : "bg-gray-500"}`} />
+    <p className="text-xs text-gray-400 italic mt-2">{note}</p>
   </div>
 );
 
