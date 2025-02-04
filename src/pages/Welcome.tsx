@@ -3,6 +3,33 @@ import { motion } from "framer-motion";
 import { BarChart3, BookOpen, Home, MessageSquare, Settings, TrendingUp, User } from "lucide-react";
 import { Link } from "react-router-dom";
 
+interface NavItemProps {
+  icon: React.ReactNode;
+  text: string;
+  active?: boolean;
+}
+
+interface StatsCardProps {
+  title: string;
+  value: string;
+  icon: React.ReactNode;
+  color: string;
+  note: string;
+}
+
+interface ActivityItemProps {
+  title: string;
+  time: string;
+  tag: string;
+}
+
+interface StudyGroupCardProps {
+  name: string;
+  members: number;
+  active: boolean;
+  note: string;
+}
+
 const Welcome = () => {
   return (
     <div className="min-h-screen bg-black text-white flex">
@@ -110,13 +137,13 @@ const Welcome = () => {
                 name="Math Besties 🧮"
                 members={5}
                 active={true}
-                note=""Yet to Come" - your grades after joining this squad"
+                note={'Yet to Come - your grades after joining this squad'}
               />
               <StudyGroupCard 
                 name="Science Gang 🧪"
                 members={3}
                 active={false}
-                note=""Mic Drop" - you after acing that test"
+                note={'Mic Drop - you after acing that test'}
               />
             </div>
           </div>
@@ -126,7 +153,7 @@ const Welcome = () => {
   );
 };
 
-const NavItem = ({ icon, text, active = false }) => (
+const NavItem = ({ icon, text, active = false }: NavItemProps) => (
   <Link
     to="#"
     className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
@@ -140,7 +167,7 @@ const NavItem = ({ icon, text, active = false }) => (
   </Link>
 );
 
-const StatsCard = ({ title, value, icon, color, note }) => (
+const StatsCard = ({ title, value, icon, color, note }: StatsCardProps) => (
   <div className="bg-gray-900/50 backdrop-blur-xl rounded-xl p-6 border border-purple-500/20">
     <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${color} flex items-center justify-center mb-4`}>
       {icon}
@@ -151,7 +178,7 @@ const StatsCard = ({ title, value, icon, color, note }) => (
   </div>
 );
 
-const ActivityItem = ({ title, time, tag }) => (
+const ActivityItem = ({ title, time, tag }: ActivityItemProps) => (
   <div className="flex items-center justify-between p-3 rounded-lg hover:bg-purple-500/10 transition-colors">
     <div>
       <h4 className="font-medium">{title}</h4>
@@ -163,7 +190,7 @@ const ActivityItem = ({ title, time, tag }) => (
   </div>
 );
 
-const StudyGroupCard = ({ name, members, active, note }) => (
+const StudyGroupCard = ({ name, members, active, note }: StudyGroupCardProps) => (
   <div className="bg-gray-800/50 rounded-lg p-4">
     <div className="flex items-center justify-between mb-2">
       <div>
