@@ -5,6 +5,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import StatsCard from "@/components/StatsCard";
+import ActivityItem from "@/components/ActivityItem";
+import StudyGroupCard from "@/components/StudyGroupCard";
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -190,13 +193,13 @@ const Welcome = () => {
                 name="Math Besties 🧮"
                 members={5}
                 active={true}
-                note={'Yet to Come - your grades after joining this squad'}
+                note="Yet to Come - your grades after joining this squad"
               />
               <StudyGroupCard 
                 name="Science Gang 🧪"
                 members={3}
                 active={false}
-                note={'Mic Drop - you after acing that test'}
+                note="Mic Drop - you after acing that test"
               />
             </div>
           </div>
