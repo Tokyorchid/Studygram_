@@ -5,6 +5,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { ThemeSelector } from "@/components/ThemeSelector";
+import { Plus, Search } from "lucide-react";
 
 interface Post {
   id: string;
@@ -48,9 +50,7 @@ const Posts = () => {
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Please sign in to create a post");
 
       const { error } = await supabase.from("posts").insert({
@@ -89,19 +89,28 @@ const Posts = () => {
   );
 
   return (
-    <div className="min-h-screen bg-black text-white p-4 md:p-8">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-          <Input
-            placeholder="Search posts..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-black/50 border-purple-500/20"
-          />
+    <div className="min-h-screen p-4 md:p-8">
+      <div className="max-w-6xl mx-auto">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-3xl font-bold">Study Sessions</h1>
+          <ThemeSelector />
+        </div>
+
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-8">
+          <div className="relative w-full md:w-96">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <Input
+              placeholder="Search posts..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-white/50 backdrop-blur-sm border-none"
+            />
+          </div>
           <Button
             onClick={() => setShowCreatePost(!showCreatePost)}
-            className="bg-gradient-to-r from-purple-500 to-pink-500"
+            className="w-full md:w-auto"
           >
+            <Plus className="mr-2 h-4 w-4" />
             {showCreatePost ? "Cancel" : "Create Post"}
           </Button>
         </div>
@@ -109,90 +118,76 @@ const Posts = () => {
         {showCreatePost && (
           <form
             onSubmit={handleCreatePost}
-            className="space-y-4 bg-black/50 border border-purple-500/20 p-6 rounded-xl"
+            className="space-y-4 bg-white/50 backdrop-blur-sm p-6 rounded-xl mb-8"
           >
             <Input
               placeholder="Title"
               value={newPost.title}
-              onChange={(e) =>
-                setNewPost({ ...newPost, title: e.target.value })
-              }
+              onChange={(e) => setNewPost({ ...newPost, title: e.target.value })}
               required
-              className="bg-black/50 border-purple-500/20"
+              className="border-none bg-white/50"
             />
             <Input
               placeholder="Subject"
               value={newPost.subject}
-              onChange={(e) =>
-                setNewPost({ ...newPost, subject: e.target.value })
-              }
+              onChange={(e) => setNewPost({ ...newPost, subject: e.target.value })}
               required
-              className="bg-black/50 border-purple-500/20"
+              className="border-none bg-white/50"
             />
             <Input
               placeholder="Description"
               value={newPost.description}
-              onChange={(e) =>
-                setNewPost({ ...newPost, description: e.target.value })
-              }
-              className="bg-black/50 border-purple-500/20"
+              onChange={(e) => setNewPost({ ...newPost, description: e.target.value })}
+              className="border-none bg-white/50"
             />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 type="datetime-local"
                 value={newPost.available_from}
-                onChange={(e) =>
-                  setNewPost({ ...newPost, available_from: e.target.value })
-                }
+                onChange={(e) => setNewPost({ ...newPost, available_from: e.target.value })}
                 required
-                className="bg-black/50 border-purple-500/20"
+                className="border-none bg-white/50"
               />
               <Input
                 type="datetime-local"
                 value={newPost.available_until}
-                onChange={(e) =>
-                  setNewPost({ ...newPost, available_until: e.target.value })
-                }
+                onChange={(e) => setNewPost({ ...newPost, available_until: e.target.value })}
                 required
-                className="bg-black/50 border-purple-500/20"
+                className="border-none bg-white/50"
               />
             </div>
-            <Button
-              type="submit"
-              className="w-full bg-gradient-to-r from-purple-500 to-pink-500"
-            >
-              Post
-            </Button>
+            <Button type="submit" className="w-full">Post</Button>
           </form>
         )}
 
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredPosts?.map((post) => (
             <div
               key={post.id}
-              className="bg-black/50 border border-purple-500/20 p-6 rounded-xl space-y-4"
+              className="bg-white/50 backdrop-blur-sm p-6 rounded-xl hover:shadow-lg transition-shadow"
             >
-              <div className="flex justify-between items-start">
+              <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="text-xl font-bold">{post.title}</h3>
-                  <p className="text-purple-400">{post.subject}</p>
+                  <p className="text-primary">{post.subject}</p>
                 </div>
                 <span className="text-sm text-gray-400">
                   {format(new Date(post.created_at), "PPp")}
                 </span>
               </div>
               {post.description && (
-                <p className="text-gray-300">{post.description}</p>
+                <p className="text-gray-600 mb-4">{post.description}</p>
               )}
-              <div className="flex justify-between items-center text-sm text-gray-400">
-                <span>
-                  Available: {format(new Date(post.available_from), "PPp")} -{" "}
-                  {format(new Date(post.available_until), "PPp")}
-                </span>
-                <span>
-                  Posted by:{" "}
-                  {post.profiles.full_name || post.profiles.username}
-                </span>
+              <div className="space-y-2 text-sm text-gray-500">
+                <p>
+                  From: {format(new Date(post.available_from), "PPp")}
+                </p>
+                <p>
+                  Until: {format(new Date(post.available_until), "PPp")}
+                </p>
+                <p className="text-primary">
+                  Posted by: {post.profiles.full_name || post.profiles.username}
+                </p>
               </div>
             </div>
           ))}
