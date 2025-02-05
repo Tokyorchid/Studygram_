@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import Progress from "./pages/Progress";
 import StudySessions from "./pages/StudySessions";
 import Messages from "./pages/Messages";
+import Posts from "./pages/Posts";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/progress" element={<Progress />} />
             <Route path="/study-sessions" element={<StudySessions />} />
             <Route path="/messages" element={<Messages />} />
+            <Route path="/posts" element={<Posts />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

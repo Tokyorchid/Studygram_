@@ -1,7 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { BarChart3, BookOpen, Home, MessageSquare, Settings, TrendingUp, User } from "lucide-react";
-import { Link } from "react-router-dom";
+import { BarChart3, BookOpen, Home, MessageSquare, Settings, TrendingUp, User, Sun, Moon, LogOut, PenSquare } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -10,31 +13,63 @@ interface NavItemProps {
   active?: boolean;
 }
 
-interface StatsCardProps {
-  title: string;
-  value: string;
-  icon: React.ReactNode;
-  color: string;
-  note: string;
-}
-
-interface ActivityItemProps {
-  title: string;
-  time: string;
-  tag: string;
-}
-
-interface StudyGroupCardProps {
-  name: string;
-  members: number;
-  active: boolean;
-  note: string;
-}
-
 const Welcome = () => {
+  const [theme, setTheme] = useState("light");
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate("/login");
+      }
+    };
+    checkUser();
+  }, [navigate]);
+
+  const handleThemeChange = async () => {
+    const newTheme = theme === "light" ? "dark" : "light";
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No user found");
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({ theme: newTheme })
+        .eq("id", user.id);
+
+      if (error) throw error;
+
+      setTheme(newTheme);
+      toast({
+        title: `Theme updated! ✨`,
+        description: `Switched to ${newTheme} mode`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      navigate("/login");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black text-white flex">
-      {/* Sidebar */}
       <motion.div 
         initial={{ x: -100, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
@@ -47,17 +82,34 @@ const Welcome = () => {
           <h1 className="text-xl font-bold hidden md:block">Studygram</h1>
         </div>
 
-        <nav className="space-y-4">
+        <nav className="space-y-4 flex-1">
           <NavItem icon={<Home />} text="Home" to="/welcome" active />
           <NavItem icon={<TrendingUp />} text="Progress" to="/progress" />
+          <NavItem icon={<PenSquare />} text="Posts" to="/posts" />
           <NavItem icon={<BookOpen />} text="Study Sessions" to="/study-sessions" />
           <NavItem icon={<MessageSquare />} text="Messages" to="/messages" />
           <NavItem icon={<User />} text="Profile" to="/profile" />
           <NavItem icon={<Settings />} text="Settings" to="/settings" />
         </nav>
+
+        <div className="space-y-4 pt-4 border-t border-purple-500/20">
+          <button
+            onClick={handleThemeChange}
+            className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-purple-500/10 text-gray-400 hover:text-purple-400 transition-colors"
+          >
+            {theme === "light" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            <span className="hidden md:block">Toggle Theme</span>
+          </button>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-purple-500/10 text-gray-400 hover:text-purple-400 transition-colors"
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="hidden md:block">Logout</span>
+          </button>
+        </div>
       </motion.div>
 
-      {/* Main Content */}
       <div className="flex-1 p-4 md:p-8 overflow-auto">
         <motion.div 
           initial={{ y: 20, opacity: 0 }}
@@ -166,42 +218,6 @@ const NavItem = ({ icon, text, to, active = false }: NavItemProps) => (
     {icon}
     <span className="hidden md:block">{text}</span>
   </Link>
-);
-
-const StatsCard = ({ title, value, icon, color, note }: StatsCardProps) => (
-  <div className="bg-gray-900/50 backdrop-blur-xl rounded-xl p-6 border border-purple-500/20">
-    <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${color} flex items-center justify-center mb-4`}>
-      {icon}
-    </div>
-    <h3 className="text-gray-400 mb-1">{title}</h3>
-    <p className="text-2xl font-bold">{value}</p>
-    <p className="text-sm text-gray-400 mt-2 italic">{note}</p>
-  </div>
-);
-
-const ActivityItem = ({ title, time, tag }: ActivityItemProps) => (
-  <div className="flex items-center justify-between p-3 rounded-lg hover:bg-purple-500/10 transition-colors">
-    <div>
-      <h4 className="font-medium">{title}</h4>
-      <p className="text-sm text-gray-400">{time}</p>
-    </div>
-    <span className="px-3 py-1 rounded-full text-sm bg-purple-500/20 text-purple-400">
-      {tag}
-    </span>
-  </div>
-);
-
-const StudyGroupCard = ({ name, members, active, note }: StudyGroupCardProps) => (
-  <div className="bg-gray-800/50 rounded-lg p-4">
-    <div className="flex items-center justify-between mb-2">
-      <div>
-        <h4 className="font-medium">{name}</h4>
-        <p className="text-sm text-gray-400">{members} members</p>
-      </div>
-      <div className={`w-3 h-3 rounded-full ${active ? "bg-green-500" : "bg-gray-500"}`} />
-    </div>
-    <p className="text-xs text-gray-400 italic mt-2">{note}</p>
-  </div>
 );
 
 export default Welcome;
