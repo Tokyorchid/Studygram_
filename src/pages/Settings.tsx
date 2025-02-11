@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Moon, Sun, Volume2, Timer } from "lucide-react";
+import { Json } from "@/integrations/supabase/types";
 
 interface ZenPreferences {
   theme: string;
@@ -39,7 +40,7 @@ const Settings = () => {
 
       if (error) throw error;
       if (data?.zen_mode_preferences) {
-        const zenPrefs = data.zen_mode_preferences as ZenPreferences;
+        const zenPrefs = data.zen_mode_preferences as unknown as ZenPreferences;
         setPreferences(zenPrefs);
       }
     } catch (error: any) {

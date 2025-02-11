@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Timer, Volume2, VolumeX } from "lucide-react";
+import { Json } from "@/integrations/supabase/types";
 
 interface ZenPreferences {
   theme: string;
@@ -57,7 +58,7 @@ const ZenMode = () => {
 
       if (error) throw error;
       if (data?.zen_mode_preferences) {
-        const zenPrefs = data.zen_mode_preferences as ZenPreferences;
+        const zenPrefs = data.zen_mode_preferences as unknown as ZenPreferences;
         setPreferences(zenPrefs);
         setTimeLeft(zenPrefs.timer * 60);
       }

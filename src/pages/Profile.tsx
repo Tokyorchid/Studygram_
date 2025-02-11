@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { Camera, User } from "lucide-react";
+import { Json } from "@/integrations/supabase/types";
 
 interface ZenPreferences {
   theme: string;
@@ -50,7 +51,7 @@ const Profile = () => {
 
       if (error) throw error;
       if (data) {
-        const zenPrefs = data.zen_mode_preferences as ZenPreferences;
+        const zenPrefs = data.zen_mode_preferences as unknown as ZenPreferences;
         setProfile({
           username: data.username,
           full_name: data.full_name,
