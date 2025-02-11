@@ -57,6 +57,7 @@ export type Database = {
           id: string
           theme: string | null
           username: string | null
+          zen_mode_preferences: Json | null
         }
         Insert: {
           created_at?: string
@@ -64,6 +65,7 @@ export type Database = {
           id: string
           theme?: string | null
           username?: string | null
+          zen_mode_preferences?: Json | null
         }
         Update: {
           created_at?: string
@@ -71,6 +73,7 @@ export type Database = {
           id?: string
           theme?: string | null
           username?: string | null
+          zen_mode_preferences?: Json | null
         }
         Relationships: []
       }
