@@ -119,26 +119,23 @@ const Welcome = () => {
           animate={{ y: 0, opacity: 1 }}
           className="max-w-6xl mx-auto space-y-8"
         >
-          {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold mb-2">✨ Yo, what's good!</h1>
-              <p className="text-gray-400">time to level up your study game fr fr 💪</p>
+              <h1 className="text-3xl font-bold mb-2">Welcome Back! ✨</h1>
+              <p className="text-gray-400">Ready to enhance your learning journey today</p>
             </div>
             <Button className="bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90">
-              Start Grinding
+              Start Learning
             </Button>
           </div>
 
-          {/* Inspiration Quote */}
           <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 p-6 rounded-xl border border-purple-500/20">
             <p className="text-lg italic text-gray-300">
-              "Even when winter comes, don't fear the cold" - Spring Day, BTS
+              "Education is not preparation for life; education is life itself."
             </p>
-            <p className="text-sm text-gray-400 mt-2">your daily dose of motivation ✨</p>
+            <p className="text-sm text-gray-400 mt-2">- John Dewey</p>
           </div>
 
-          {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <StatsCard 
               title="Study Streak" 
@@ -163,7 +160,6 @@ const Welcome = () => {
             />
           </div>
 
-          {/* Recent Activity */}
           <div className="bg-gray-900/50 backdrop-blur-xl rounded-xl p-6 border border-purple-500/20">
             <h2 className="text-xl font-semibold mb-4">🔥 The Tea</h2>
             <div className="space-y-4">
@@ -185,7 +181,6 @@ const Welcome = () => {
             </div>
           </div>
 
-          {/* Study Groups */}
           <div className="bg-gray-900/50 backdrop-blur-xl rounded-xl p-6 border border-purple-500/20">
             <h2 className="text-xl font-semibold mb-4">👥 Study Squads</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

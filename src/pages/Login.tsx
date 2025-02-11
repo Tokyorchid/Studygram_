@@ -1,9 +1,11 @@
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { BookOpen, Users, Trophy } from "lucide-react";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -53,16 +55,16 @@ const Login = () => {
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-pink-500/30 rounded-full mix-blend-overlay filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
       </div>
 
-      <div className="w-full max-w-md mx-auto">
+      <div className="w-full max-w-md mx-auto space-y-8">
         <div className="backdrop-blur-sm bg-black/50 border border-purple-500/20 shadow-xl rounded-xl p-8">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-white mb-2">
-              {isSignUp ? "Join the Study Squad ✨" : "Welcome Back"}
+              {isSignUp ? "Join Our Learning Community" : "Welcome Back"}
             </h1>
             <p className="text-gray-400">
               {isSignUp
-                ? "Create your account to start learning"
-                : "Enter your details to sign in"}
+                ? "Create your account to begin your learning journey"
+                : "Sign in to continue your learning progress"}
             </p>
           </div>
 
@@ -100,6 +102,24 @@ const Login = () => {
                 ? "Already have an account? Sign in"
                 : "Don't have an account? Sign up"}
             </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-white">
+          <div className="backdrop-blur-sm bg-white/5 p-6 rounded-xl border border-purple-500/20 text-center">
+            <BookOpen className="w-8 h-8 mx-auto mb-4 text-purple-400" />
+            <h3 className="font-semibold mb-2">Personalized Learning</h3>
+            <p className="text-sm text-gray-400">Tailored study paths for your goals</p>
+          </div>
+          <div className="backdrop-blur-sm bg-white/5 p-6 rounded-xl border border-purple-500/20 text-center">
+            <Users className="w-8 h-8 mx-auto mb-4 text-purple-400" />
+            <h3 className="font-semibold mb-2">Study Groups</h3>
+            <p className="text-sm text-gray-400">Learn together with peers</p>
+          </div>
+          <div className="backdrop-blur-sm bg-white/5 p-6 rounded-xl border border-purple-500/20 text-center">
+            <Trophy className="w-8 h-8 mx-auto mb-4 text-purple-400" />
+            <h3 className="font-semibold mb-2">Track Progress</h3>
+            <p className="text-sm text-gray-400">Monitor your achievements</p>
           </div>
         </div>
       </div>

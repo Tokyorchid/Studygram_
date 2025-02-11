@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,25 +35,32 @@ const Posts = () => {
     <div className="min-h-screen p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold">Study Sessions</h1>
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              Study Sessions
+            </h1>
+            <p className="text-gray-400 mt-2">
+              Discover and join study sessions that match your interests
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-8">
           <div className="relative w-full md:w-96">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <Input
-              placeholder="Search posts..."
+              placeholder="Search study sessions..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-white/50 backdrop-blur-sm border-none"
+              className="pl-10 bg-white/5 backdrop-blur-sm border-white/10 text-white"
             />
           </div>
           <Button
             onClick={() => setShowCreatePost(!showCreatePost)}
-            className="w-full md:w-auto"
+            className="w-full md:w-auto bg-gradient-to-r from-purple-500 to-pink-500"
           >
             <Plus className="mr-2 h-4 w-4" />
-            {showCreatePost ? "Cancel" : "Create Post"}
+            {showCreatePost ? "Cancel" : "Create Session"}
           </Button>
         </div>
 
