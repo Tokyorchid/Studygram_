@@ -57,8 +57,9 @@ const ZenMode = () => {
 
       if (error) throw error;
       if (data?.zen_mode_preferences) {
-        setPreferences(data.zen_mode_preferences);
-        setTimeLeft(data.zen_mode_preferences.timer * 60);
+        const zenPrefs = data.zen_mode_preferences as ZenPreferences;
+        setPreferences(zenPrefs);
+        setTimeLeft(zenPrefs.timer * 60);
       }
     } catch (error: any) {
       toast({

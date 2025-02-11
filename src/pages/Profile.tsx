@@ -7,14 +7,16 @@ import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { Camera, User } from "lucide-react";
 
+interface ZenPreferences {
+  theme: string;
+  music: string;
+  timer: number;
+}
+
 interface Profile {
   username: string | null;
   full_name: string | null;
-  zen_mode_preferences: {
-    theme: string;
-    music: string;
-    timer: number;
-  } | null;
+  zen_mode_preferences: ZenPreferences | null;
 }
 
 const Profile = () => {
@@ -47,7 +49,14 @@ const Profile = () => {
         .single();
 
       if (error) throw error;
-      if (data) setProfile(data);
+      if (data) {
+        const zenPrefs = data.zen_mode_preferences as ZenPreferences;
+        setProfile({
+          username: data.username,
+          full_name: data.full_name,
+          zen_mode_preferences: zenPrefs
+        });
+      }
     } catch (error: any) {
       toast({
         title: "bestie, we hit a snag 😔",

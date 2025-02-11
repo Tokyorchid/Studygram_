@@ -39,7 +39,8 @@ const Settings = () => {
 
       if (error) throw error;
       if (data?.zen_mode_preferences) {
-        setPreferences(data.zen_mode_preferences);
+        const zenPrefs = data.zen_mode_preferences as ZenPreferences;
+        setPreferences(zenPrefs);
       }
     } catch (error: any) {
       toast({
@@ -58,7 +59,7 @@ const Settings = () => {
       const { error } = await supabase
         .from("profiles")
         .update({
-          zen_mode_preferences: preferences
+          zen_mode_preferences: preferences as unknown as Json
         })
         .eq("id", user.id);
 
