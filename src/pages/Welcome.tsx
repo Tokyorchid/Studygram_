@@ -1,3 +1,4 @@
+
 import { motion } from "framer-motion";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -9,6 +10,7 @@ import StudySquadCard from "@/components/StudySquadCard";
 import Sidebar from "@/components/navigation/Sidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import QuoteCard from "@/components/dashboard/QuoteCard";
+import { Button } from "@/components/ui/button";
 import { BarChart3, BookOpen, TrendingUp } from "lucide-react";
 
 const Welcome = () => {
