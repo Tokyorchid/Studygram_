@@ -24,45 +24,59 @@ const Welcome = () => {
     checkUser();
   }, [navigate]);
 
+  const fadeInUp = {
+    initial: { y: 20, opacity: 0 },
+    animate: { y: 0, opacity: 1 },
+    transition: { duration: 0.5 }
+  };
+
   return (
     <div className="min-h-screen bg-black text-white flex">
       <Sidebar />
 
       <div className="flex-1 p-4 md:p-8 overflow-auto">
         <motion.div 
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           className="max-w-6xl mx-auto space-y-8"
         >
           <DashboardHeader />
           <QuoteCard />
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <motion.div 
+            {...fadeInUp}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+          >
             <StatsCard 
               title="Study Streak" 
               value="7 days" 
-              icon={<TrendingUp className="w-6 h-6" />}
+              icon={<TrendingUp className="w-6 h-6 text-white" />}
               color="from-purple-500 to-pink-500"
               note="no cap, you're on fire! 🔥"
             />
             <StatsCard 
               title="Focus Time" 
               value="4.2 hrs" 
-              icon={<BarChart3 className="w-6 h-6" />}
+              icon={<BarChart3 className="w-6 h-6 text-white" />}
               color="from-blue-500 to-purple-500"
               note="slay! that's the vibe 💫"
             />
             <StatsCard 
               title="Tasks Done" 
               value="12" 
-              icon={<BookOpen className="w-6 h-6" />}
+              icon={<BookOpen className="w-6 h-6 text-white" />}
               color="from-pink-500 to-orange-500"
               note="you're eating this up! 🌟"
             />
-          </div>
+          </motion.div>
 
-          <div className="bg-gray-900/50 backdrop-blur-xl rounded-xl p-6 border border-purple-500/20">
-            <h2 className="text-xl font-semibold mb-4">🔥 The Tea</h2>
+          <motion.div 
+            {...fadeInUp}
+            className="bg-gray-900/50 backdrop-blur-xl rounded-xl p-6 border border-purple-500/20"
+          >
+            <h2 className="text-xl sm:text-2xl font-semibold bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text mb-4">
+              🔥 The Tea
+            </h2>
             <div className="space-y-4">
               <ActivityItem 
                 title="Finished Math Chapter 5"
@@ -80,10 +94,15 @@ const Welcome = () => {
                 tag="Big Brain Energy"
               />
             </div>
-          </div>
+          </motion.div>
 
-          <div className="bg-gray-900/50 backdrop-blur-xl rounded-xl p-6 border border-purple-500/20">
-            <h2 className="text-xl font-semibold mb-4">👥 Study Squads</h2>
+          <motion.div 
+            {...fadeInUp}
+            className="bg-gray-900/50 backdrop-blur-xl rounded-xl p-6 border border-purple-500/20"
+          >
+            <h2 className="text-xl sm:text-2xl font-semibold bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text mb-4">
+              👥 Study Squads
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <StudyGroupCard 
                 name="Math Besties 🧮"
@@ -98,7 +117,7 @@ const Welcome = () => {
                 note="Mic Drop - you after acing that test"
               />
             </div>
-          </div>
+          </motion.div>
         </motion.div>
       </div>
     </div>

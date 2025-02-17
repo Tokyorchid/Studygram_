@@ -6,16 +6,20 @@ const DashboardHeader = () => {
   const navigate = useNavigate();
   
   return (
-    <div className="flex items-center justify-between">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Welcome Back! ✨</h1>
-        <p className="text-gray-400">Ready to enhance your learning journey today</p>
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4">
+      <div className="text-center sm:text-left">
+        <h1 className="text-3xl sm:text-4xl font-bold mb-2 bg-gradient-to-r from-purple-400 to-pink-500 text-transparent bg-clip-text">
+          Welcome Back! ✨
+        </h1>
+        <p className="text-gray-400 text-sm sm:text-base">
+          Ready to level up your learning journey today
+        </p>
       </div>
       <Button 
-        onClick={() => navigate("/zen-mode")}
-        className="bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90"
+        onClick={() => navigate("/study-sessions")}
+        className="w-full sm:w-auto bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90 transform hover:scale-105 transition-all duration-300 text-lg font-semibold px-8 py-6 h-auto"
       >
-        Start Learning
+        Start Grinding
       </Button>
     </div>
   );
