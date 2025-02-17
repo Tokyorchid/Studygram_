@@ -1,17 +1,40 @@
+
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { BookOpen, Clock, Target, Users } from "lucide-react";
-import { Link } from "react-router-dom";
-
-interface SessionCardProps {
-  title: string;
-  subject: string;
-  time: string;
-  participants: number;
-  goals: string[];
-}
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import StudySessionCard from "@/components/StudySessionCard";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 const StudySessions = () => {
+  const navigate = useNavigate();
+
+  const { data: sessions } = useQuery({
+    queryKey: ['studySessions'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('study_sessions')
+        .select('*')
+        .order('start_time', { ascending: true })
+        .gte('end_time', new Date().toISOString());
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate("/login");
+      }
+    };
+    checkUser();
+  }, [navigate]);
+
   return (
     <div className="min-h-screen bg-black text-white p-4 md:p-8">
       <motion.div
@@ -32,27 +55,18 @@ const StudySessions = () => {
 
         {/* Session Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <SessionCard
-            title="Calculus Crew"
-            subject="Mathematics"
-            time="Today, 3:00 PM"
-            participants={4}
-            goals={["Limits", "Derivatives", "Integration"]}
-          />
-          <SessionCard
-            title="Physics Focus"
-            subject="Science"
-            time="Tomorrow, 2:00 PM"
-            participants={3}
-            goals={["Mechanics", "Thermodynamics"]}
-          />
-          <SessionCard
-            title="Literature Circle"
-            subject="English"
-            time="Friday, 4:00 PM"
-            participants={5}
-            goals={["Poetry Analysis", "Essay Writing"]}
-          />
+          {sessions?.map((session) => (
+            <StudySessionCard
+              key={session.id}
+              id={session.id}
+              title={session.title}
+              subject={session.subject}
+              startTime={session.start_time}
+              endTime={session.end_time}
+              description={session.description}
+              goals={["Study Goals", "Practice Problems", "Review Material"]}
+            />
+          ))}
         </div>
 
         {/* Quick Tips */}
@@ -71,46 +85,5 @@ const StudySessions = () => {
     </div>
   );
 };
-
-const SessionCard = ({ title, subject, time, participants, goals }: SessionCardProps) => (
-  <motion.div
-    whileHover={{ scale: 1.02 }}
-    className="bg-gray-900/50 backdrop-blur-xl rounded-xl p-6 border border-purple-500/20"
-  >
-    <div className="flex items-start justify-between mb-4">
-      <div>
-        <h3 className="font-semibold text-lg">{title}</h3>
-        <p className="text-gray-400">{subject}</p>
-      </div>
-      <Button variant="outline" size="sm" className="hover:bg-purple-500/20">
-        Join
-      </Button>
-    </div>
-    
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 text-gray-400">
-        <Clock className="w-4 h-4" />
-        <span>{time}</span>
-      </div>
-      
-      <div className="flex items-center gap-2 text-gray-400">
-        <Users className="w-4 h-4" />
-        <span>{participants} participants</span>
-      </div>
-      
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 text-gray-400">
-          <Target className="w-4 h-4" />
-          <span>Goals:</span>
-        </div>
-        <ul className="list-disc list-inside text-sm text-gray-400 pl-2">
-          {goals.map((goal) => (
-            <li key={goal}>{goal}</li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  </motion.div>
-);
 
 export default StudySessions;
