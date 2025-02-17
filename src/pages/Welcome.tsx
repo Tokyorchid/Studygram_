@@ -1,11 +1,11 @@
-
 import { motion } from "framer-motion";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import StatsCard from "@/components/StatsCard";
 import ActivityItem from "@/components/ActivityItem";
-import StudyGroupCard from "@/components/StudyGroupCard";
+import StudySquadCard from "@/components/StudySquadCard";
 import Sidebar from "@/components/navigation/Sidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import QuoteCard from "@/components/dashboard/QuoteCard";
@@ -13,6 +13,20 @@ import { BarChart3, BookOpen, TrendingUp } from "lucide-react";
 
 const Welcome = () => {
   const navigate = useNavigate();
+
+  const { data: squads } = useQuery({
+    queryKey: ['studySquads'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('study_squads')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(4);
+
+      if (error) throw error;
+      return data;
+    },
+  });
 
   useEffect(() => {
     const checkUser = async () => {
@@ -43,10 +57,7 @@ const Welcome = () => {
           <DashboardHeader />
           <QuoteCard />
 
-          <motion.div 
-            {...fadeInUp}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-          >
+          <motion.div {...fadeInUp} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <StatsCard 
               title="Study Streak" 
               value="7 days" 
@@ -70,10 +81,7 @@ const Welcome = () => {
             />
           </motion.div>
 
-          <motion.div 
-            {...fadeInUp}
-            className="bg-gray-900/50 backdrop-blur-xl rounded-xl p-6 border border-purple-500/20"
-          >
+          <motion.div {...fadeInUp} className="bg-gray-900/50 backdrop-blur-xl rounded-xl p-6 border border-purple-500/20">
             <h2 className="text-xl sm:text-2xl font-semibold bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text mb-4">
               🔥 The Tea
             </h2>
@@ -96,26 +104,28 @@ const Welcome = () => {
             </div>
           </motion.div>
 
-          <motion.div 
-            {...fadeInUp}
-            className="bg-gray-900/50 backdrop-blur-xl rounded-xl p-6 border border-purple-500/20"
-          >
-            <h2 className="text-xl sm:text-2xl font-semibold bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text mb-4">
-              👥 Study Squads
-            </h2>
+          <motion.div {...fadeInUp} className="bg-gray-900/50 backdrop-blur-xl rounded-xl p-6 border border-purple-500/20">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl sm:text-2xl font-semibold bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text">
+                👥 Study Squads
+              </h2>
+              <Button 
+                onClick={() => navigate("/study-sessions")}
+                className="bg-purple-500 hover:bg-purple-600"
+              >
+                View All Squads
+              </Button>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <StudyGroupCard 
-                name="Math Besties 🧮"
-                members={5}
-                active={true}
-                note="Yet to Come - your grades after joining this squad"
-              />
-              <StudyGroupCard 
-                name="Science Gang 🧪"
-                members={3}
-                active={false}
-                note="Mic Drop - you after acing that test"
-              />
+              {squads?.map((squad) => (
+                <StudySquadCard 
+                  key={squad.id}
+                  id={squad.id}
+                  name={squad.name}
+                  description={squad.description || ""}
+                  active={squad.active}
+                />
+              ))}
             </div>
           </motion.div>
         </motion.div>
