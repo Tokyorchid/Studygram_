@@ -34,20 +34,26 @@ const Posts = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-950 p-4 md:p-8">
+    <div className="min-h-screen bg-[#0A0A0B] p-4 md:p-8">
       <div className="max-w-[1400px] mx-auto">
+        {/* Subtle background blobs */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -right-40 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl" />
+          <div className="absolute top-1/2 -left-40 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
+        </div>
+
         {/* Header Section */}
-        <div className="mb-8">
+        <div className="mb-12 relative">
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col gap-2"
+            className="flex flex-col gap-3"
           >
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-              Study Sessions Board
+            <h1 className="text-4xl font-bold text-white/90">
+              Study Sessions
             </h1>
-            <p className="text-gray-400">
-              Organize and join study sessions that match your interests
+            <p className="text-gray-400 text-lg">
+              Find and join study sessions that match your interests
             </p>
           </motion.div>
         </div>
@@ -56,20 +62,23 @@ const Posts = () => {
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col md:flex-row gap-4 items-center justify-between mb-8 bg-gray-900/50 backdrop-blur-xl p-4 rounded-xl border border-gray-800"
+          className="flex flex-col md:flex-row gap-6 items-center justify-between mb-10 bg-white/[0.02] backdrop-blur-xl p-6 rounded-2xl border border-white/[0.05]"
         >
           {/* Left Section */}
           <div className="flex items-center gap-4 w-full md:w-auto">
             <div className="relative flex-1 md:w-80">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
               <Input
                 placeholder="Search study sessions..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-gray-800/50 border-gray-700 text-white w-full"
+                className="pl-10 bg-white/[0.03] border-white/[0.05] text-white w-full h-11 text-base placeholder:text-gray-500"
               />
             </div>
-            <Button variant="outline" className="border-gray-700 text-gray-300">
+            <Button 
+              variant="outline" 
+              className="border-white/[0.05] bg-white/[0.03] text-gray-300 hover:bg-white/[0.05] hover:text-white"
+            >
               <Filter className="w-4 h-4 mr-2" />
               Filter
             </Button>
@@ -77,12 +86,12 @@ const Posts = () => {
 
           {/* Right Section */}
           <div className="flex items-center gap-4 w-full md:w-auto">
-            <div className="flex items-center bg-gray-800/50 rounded-lg p-1">
+            <div className="flex items-center bg-white/[0.03] rounded-lg p-1">
               <Button
                 variant={viewMode === "board" ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setViewMode("board")}
-                className="px-3"
+                className={`px-4 ${viewMode === "board" ? "bg-white/10" : "hover:bg-white/[0.05]"}`}
               >
                 <Layout className="w-4 h-4 mr-2" />
                 Board
@@ -91,15 +100,15 @@ const Posts = () => {
                 variant={viewMode === "list" ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setViewMode("list")}
-                className="px-3"
+                className={`px-4 ${viewMode === "list" ? "bg-white/10" : "hover:bg-white/[0.05]"}`}
               >
                 <Calendar className="w-4 h-4 mr-2" />
-                Calendar
+                List
               </Button>
             </div>
             <Button
               onClick={() => setShowCreatePost(!showCreatePost)}
-              className="bg-purple-500 hover:bg-purple-600 text-white ml-auto md:ml-0"
+              className="bg-white/[0.05] hover:bg-white/[0.08] text-white border border-white/[0.05]"
             >
               <Plus className="w-4 h-4 mr-2" />
               Create Session
@@ -111,7 +120,7 @@ const Posts = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
+            className="mb-10"
           >
             <CreatePostForm 
               onSuccess={() => {
