@@ -1,10 +1,11 @@
 
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Clock, Target, Users, Play, Pause, X, MessageSquare, CheckCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Mic, MicOff, Video, VideoOff, UserCircle, Clock, CheckSquare, Hash, Volume2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
@@ -23,20 +24,35 @@ interface VibeSettings {
   [key: string]: any;
 }
 
+interface Session {
+  id: string;
+  title: string;
+  subject: string;
+  description: string;
+  start_time: string;
+  end_time: string;
+  created_by: string;
+  session_type: 'instant_pod' | 'silent_costudy' | 'task_based' | 'help_session' | 'vibe_based';
+  metadata: SessionMetadata | null;
+  vibe_settings: VibeSettings | null;
+}
+
 const SessionPage = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [isPaused, setIsPaused] = useState(false);
+  const [isMicOn, setIsMicOn] = useState(false);
+  const [isVideoOn, setIsVideoOn] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
-  const [studyGoal, setStudyGoal] = useState("");
-  const [progress, setProgress] = useState(0);
-  const [tasks, setTasks] = useState<{ id: string; text: string; completed: boolean }[]>([]);
   const [sessionEnded, setSessionEnded] = useState(false);
+  const [tasks, setTasks] = useState<Array<{ id: string; text: string; completed: boolean }>>([]);
+  const [isPaused, setIsPaused] = useState(false);
+  const [messages, setMessages] = useState<Array<{ id: string; user: string; text: string; timestamp: string }>>([]);
+  const [newMessage, setNewMessage] = useState("");
 
-  // Fetch session details
-  const { data: session, isLoading: isSessionLoading } = useQuery({
-    queryKey: ['sessionDetails', sessionId],
+  // Fetch session data
+  const { data: session, isLoading: sessionLoading } = useQuery({
+    queryKey: ['session', sessionId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('study_sessions')
@@ -45,20 +61,21 @@ const SessionPage = () => {
         .single();
 
       if (error) throw error;
-      return data;
+      return data as Session;
     },
   });
 
   // Fetch participants
-  const { data: participants, isLoading: isParticipantsLoading } = useQuery({
+  const { data: participants } = useQuery({
     queryKey: ['sessionParticipants', sessionId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('session_participants')
         .select(`
           user_id,
-          profiles:user_id (
+          profiles:user_id(
             username,
+            full_name,
             avatar_url
           )
         `)
@@ -72,39 +89,46 @@ const SessionPage = () => {
 
   // Timer effect
   useEffect(() => {
-    if (!session) return;
+    let interval: number | undefined;
     
-    let interval: NodeJS.Timeout;
-    
-    if (!isPaused && !sessionEnded) {
-      interval = setInterval(() => {
+    if (!sessionEnded && !isPaused) {
+      interval = window.setInterval(() => {
         setElapsedTime(prev => prev + 1);
       }, 1000);
     }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [sessionEnded, isPaused]);
 
-    const sessionEnd = new Date(session.end_time).getTime();
-    const now = new Date().getTime();
-    if (now >= sessionEnd && !sessionEnded) {
-      setSessionEnded(true);
-      toast({
-        title: "Session ended",
-        description: "Your study session has ended.",
-      });
-    }
-
-    return () => clearInterval(interval);
-  }, [isPaused, session, sessionEnded, toast]);
-
-  // Check authentication
+  // Check if user is a participant
   useEffect(() => {
-    const checkUser = async () => {
+    const checkParticipation = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        navigate("/login");
+        navigate('/login');
+        return;
+      }
+
+      const { count } = await supabase
+        .from('session_participants')
+        .select('*', { count: 'exact', head: true })
+        .eq('session_id', sessionId)
+        .eq('user_id', user.id);
+
+      if (!count) {
+        toast({
+          title: "Not a participant",
+          description: "You need to join this session first",
+          variant: "destructive",
+        });
+        navigate('/study-sessions');
       }
     };
-    checkUser();
-  }, [navigate]);
+
+    checkParticipation();
+  }, [sessionId, navigate, toast]);
 
   // Initialize tasks for task-based sessions
   useEffect(() => {
@@ -117,444 +141,510 @@ const SessionPage = () => {
     }
   }, [session]);
 
+  // Format time for display (HH:MM:SS)
   const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
+    
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleTogglePause = () => {
-    setIsPaused(prev => !prev);
+  const toggleMic = () => {
+    setIsMicOn(!isMicOn);
     toast({
-      title: isPaused ? "Session resumed" : "Session paused",
-      description: isPaused ? "Timer is now running" : "Take a break, timer is paused",
+      title: !isMicOn ? "Microphone On" : "Microphone Off",
+      description: !isMicOn ? "Others can now hear you" : "You are now muted",
+    });
+  };
+
+  const toggleVideo = () => {
+    setIsVideoOn(!isVideoOn);
+    toast({
+      title: !isVideoOn ? "Camera On" : "Camera Off",
+      description: !isVideoOn ? "Others can now see you" : "Your camera is now off",
+    });
+  };
+
+  const togglePause = () => {
+    setIsPaused(!isPaused);
+    toast({
+      title: !isPaused ? "Session Paused" : "Session Resumed",
+      description: !isPaused ? "Take a break and come back when ready" : "Let's continue studying!",
     });
   };
 
   const handleEndSession = () => {
+    // Show confirmation
+    if (!sessionEnded && !window.confirm("Are you sure you want to end your session?")) {
+      return;
+    }
+    
     setSessionEnded(true);
     toast({
-      title: "Session complete",
-      description: `You studied for ${formatTime(elapsedTime)}`,
+      title: "Session Ended",
+      description: "Great job today! You studied for " + formatTime(elapsedTime),
     });
   };
 
-  const handleUpdateProgress = (newProgress: number) => {
-    setProgress(newProgress);
-  };
-
   const handleToggleTask = (taskId: string) => {
-    setTasks(prevTasks => 
-      prevTasks.map(task => 
-        task.id === taskId ? { ...task, completed: !task.completed } : task
-      )
-    );
-    
-    // Calculate new progress
-    const newTasks = tasks.map(task => 
+    setTasks(prev => prev.map(task => 
       task.id === taskId ? { ...task, completed: !task.completed } : task
-    );
-    const completedCount = newTasks.filter(t => t.completed).length;
-    handleUpdateProgress(Math.round((completedCount / newTasks.length) * 100));
+    ));
   };
 
-  if (isSessionLoading) {
+  const handleSendMessage = () => {
+    if (!newMessage.trim()) return;
+    
+    const message = {
+      id: `msg-${Date.now()}`,
+      user: "You",
+      text: newMessage,
+      timestamp: new Date().toISOString(),
+    };
+    
+    setMessages(prev => [...prev, message]);
+    setNewMessage("");
+  };
+
+  if (sessionLoading) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="animate-pulse text-xl">Loading session...</div>
+      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+        <div className="animate-spin h-12 w-12 border-4 border-purple-500 rounded-full border-t-transparent"></div>
       </div>
     );
   }
 
   if (!session) {
     return (
-      <div className="min-h-screen bg-black text-white p-8">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-2xl font-bold text-red-500">Session not found</h1>
-          <p className="mt-4">This study session doesn't exist or has ended.</p>
-          <Button 
-            className="mt-8 bg-purple-500" 
-            onClick={() => navigate("/study-sessions")}
-          >
-            Back to Sessions
-          </Button>
-        </div>
+      <div className="min-h-screen bg-gray-900 text-white p-8 flex flex-col items-center justify-center">
+        <h1 className="text-3xl font-bold mb-4">Session Not Found</h1>
+        <p className="text-gray-400 mb-8">The study session you're looking for doesn't exist or has ended.</p>
+        <Button onClick={() => navigate('/study-sessions')}>
+          Back to Study Sessions
+        </Button>
       </div>
     );
   }
 
-  // Render different session layouts based on session type
-  const renderSessionContent = () => {
-    switch (session.session_type) {
-      case 'instant_pod':
-        return (
-          <div className="space-y-8">
-            <div className="bg-gray-900/50 rounded-xl p-6">
-              <h2 className="text-xl font-semibold mb-4">Instant Study Pod</h2>
-              <div className="text-center my-8">
-                <div className="text-5xl font-bold font-mono">{formatTime(elapsedTime)}</div>
-                <p className="text-gray-400 mt-2">Study duration</p>
+  // Calculate completion percentage for task-based sessions
+  const completedTasksPercentage = tasks.length > 0
+    ? Math.round((tasks.filter(task => task.completed).length / tasks.length) * 100)
+    : 0;
+
+  // Shared session header
+  const SessionHeader = () => (
+    <div className="bg-gray-900 p-6 rounded-xl mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div>
+        <h1 className="text-2xl font-bold">{session.title}</h1>
+        <p className="text-gray-400">{session.subject}</p>
+      </div>
+      
+      <div className="flex flex-col items-end">
+        <div className="text-2xl font-mono">{formatTime(elapsedTime)}</div>
+        <div className="text-gray-400 text-sm">
+          {format(new Date(session.start_time), 'PPp')} - {format(new Date(session.end_time), 'p')}
+        </div>
+      </div>
+    </div>
+  );
+
+  // Shared participant display
+  const ParticipantsList = () => (
+    <div className="bg-gray-900/70 p-4 rounded-xl">
+      <h3 className="font-semibold mb-3">Participants ({participants?.length || 0})</h3>
+      <div className="flex flex-wrap gap-3">
+        {participants?.map((participant) => (
+          <div key={participant.user_id} className="flex items-center gap-2 bg-gray-800/50 rounded-full px-3 py-1">
+            <UserCircle className="w-5 h-5" />
+            <span>{participant.profiles?.username || "Anonymous"}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  // Shared controls
+  const SessionControls = () => (
+    <div className="sticky bottom-6 flex justify-center">
+      <div className="bg-gray-900/90 backdrop-blur-lg px-6 py-3 rounded-full flex items-center gap-4">
+        <button
+          onClick={toggleMic}
+          className={`p-3 rounded-full ${isMicOn ? 'bg-green-500/20 text-green-400' : 'bg-gray-800 text-gray-400'}`}
+        >
+          {isMicOn ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+        </button>
+        
+        <button
+          onClick={toggleVideo}
+          className={`p-3 rounded-full ${isVideoOn ? 'bg-green-500/20 text-green-400' : 'bg-gray-800 text-gray-400'}`}
+        >
+          {isVideoOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+        </button>
+        
+        <button
+          onClick={togglePause}
+          className={`p-3 rounded-full ${isPaused ? 'bg-amber-500/20 text-amber-400' : 'bg-gray-800 text-gray-400'}`}
+        >
+          <Clock className="w-5 h-5" />
+        </button>
+        
+        <Button
+          onClick={handleEndSession}
+          variant={sessionEnded ? "secondary" : "destructive"}
+          className="rounded-full px-6"
+        >
+          {sessionEnded ? "Return to Sessions" : "End Session"}
+        </Button>
+      </div>
+    </div>
+  );
+
+  // Render different UIs based on session type
+  switch (session.session_type) {
+    case 'instant_pod':
+      return (
+        <div className="min-h-screen bg-gray-950 text-white p-4 md:p-8">
+          <div className="max-w-7xl mx-auto space-y-8">
+            <SessionHeader />
+            
+            <div className="grid md:grid-cols-3 gap-8">
+              <div className="md:col-span-2 bg-gray-900/50 backdrop-blur-xl rounded-xl p-6 flex items-center justify-center min-h-[400px]">
+                {isVideoOn ? (
+                  <div className="w-full aspect-video bg-black rounded-lg flex items-center justify-center">
+                    <div className="text-gray-400">Camera preview (simulated)</div>
+                  </div>
+                ) : (
+                  <div className="text-gray-400 text-center">
+                    <VideoOff className="w-16 h-16 mx-auto mb-4 text-gray-500" />
+                    <p>Camera is off</p>
+                    <p className="text-sm mt-2">Turn on your camera to see participants</p>
+                  </div>
+                )}
               </div>
               
-              <div className="flex gap-4 justify-center mt-8">
-                <Button 
-                  onClick={handleTogglePause} 
-                  className={isPaused ? "bg-green-500" : "bg-yellow-500"}
-                >
-                  {isPaused ? <Play className="mr-2 h-4 w-4" /> : <Pause className="mr-2 h-4 w-4" />}
-                  {isPaused ? "Resume" : "Pause"}
-                </Button>
-                <Button 
-                  onClick={handleEndSession}
-                  variant="destructive"
-                  disabled={sessionEnded}
-                >
-                  <X className="mr-2 h-4 w-4" />
-                  End Session
-                </Button>
+              <div className="space-y-6">
+                <ParticipantsList />
+                
+                <div className="bg-gray-900/70 p-4 rounded-xl">
+                  <h3 className="font-semibold mb-3">Session Progress</h3>
+                  <div className="w-full bg-gray-800 rounded-full h-3">
+                    <div 
+                      className="bg-purple-500 h-3 rounded-full" 
+                      style={{ width: `${Math.min(100, (elapsedTime / (7200)) * 100)}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-gray-400 text-sm mt-2">
+                    Duration: {formatTime(elapsedTime)} 
+                    {isPaused && <span className="text-amber-400 ml-2">(Paused)</span>}
+                  </p>
+                </div>
               </div>
             </div>
-
-            {participants && participants.length > 0 && (
-              <div className="bg-gray-900/50 rounded-xl p-6">
-                <h3 className="font-semibold mb-4 flex items-center">
-                  <Users className="mr-2 h-4 w-4" />
-                  Participants ({participants.length})
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {participants.map((participant) => (
-                    <div key={participant.user_id} className="flex items-center gap-2 p-2 bg-gray-800/50 rounded-lg">
-                      <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                        {participant.profiles?.username?.charAt(0) || '?'}
-                      </div>
-                      <span className="text-sm">{participant.profiles?.username || 'Anonymous'}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            
+            {!sessionEnded && <SessionControls />}
           </div>
-        );
-        
-      case 'silent_costudy':
-        return (
-          <div className="space-y-8">
-            <div className="bg-gray-900/50 rounded-xl p-6">
-              <h2 className="text-xl font-semibold mb-4">Silent Co-Study Room</h2>
-              
-              <div className="grid md:grid-cols-2 gap-8">
-                <div className="space-y-4">
-                  <div className="text-center">
-                    <div className="text-5xl font-bold font-mono">{formatTime(elapsedTime)}</div>
-                    <p className="text-gray-400 mt-2">Focus time</p>
-                  </div>
-                  
-                  <div className="mt-4">
-                    <label className="block text-sm text-gray-400 mb-2">Your study goal:</label>
-                    <div className="flex gap-2">
-                      <input 
-                        className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2"
-                        placeholder="What are you working on?"
-                        value={studyGoal}
-                        onChange={(e) => setStudyGoal(e.target.value)}
-                        disabled={sessionEnded}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4">
-                    <label className="block text-sm text-gray-400 mb-2">Progress:</label>
-                    <div className="w-full bg-gray-800 rounded-full h-4">
-                      <div 
-                        className="bg-gradient-to-r from-purple-500 to-pink-500 h-4 rounded-full transition-all duration-500"
-                        style={{ width: `${progress}%` }}
-                      ></div>
-                    </div>
-                    <div className="flex justify-between mt-2">
-                      <button 
-                        className="text-xs text-purple-400 hover:text-purple-300"
-                        onClick={() => handleUpdateProgress(Math.max(0, progress - 10))}
-                        disabled={sessionEnded}
-                      >
-                        -10%
-                      </button>
-                      <span className="text-sm">{progress}%</span>
-                      <button 
-                        className="text-xs text-purple-400 hover:text-purple-300"
-                        onClick={() => handleUpdateProgress(Math.min(100, progress + 10))}
-                        disabled={sessionEnded}
-                      >
-                        +10%
-                      </button>
-                    </div>
-                  </div>
+        </div>
+      );
+    
+    case 'silent_costudy':
+      return (
+        <div className="min-h-screen bg-gray-950 text-white p-4 md:p-8">
+          <div className="max-w-7xl mx-auto space-y-8">
+            <SessionHeader />
+            
+            <div className="grid md:grid-cols-3 gap-8">
+              <div className="md:col-span-2 bg-gray-900/50 backdrop-blur-xl rounded-xl p-6">
+                <h2 className="text-xl font-semibold mb-4">Silent Co-Study Room</h2>
+                <p className="text-gray-400 mb-6">Study quietly with others for accountability without distractions.</p>
+                
+                <div className="bg-gray-800/50 rounded-xl p-4">
+                  <h3 className="font-semibold mb-3">Your Study Goal</h3>
+                  <p className="bg-gray-900/50 p-3 rounded-lg border border-gray-700">
+                    {session.description || "No specific goal set"}
+                  </p>
                 </div>
                 
-                <div className="bg-gray-900/70 rounded-xl p-4">
-                  <h3 className="font-semibold mb-3 flex items-center">
-                    <Users className="mr-2 h-4 w-4" />
-                    Co-Study Members ({participants?.length || 0})
-                  </h3>
-                  <div className="space-y-3 max-h-60 overflow-auto">
+                <div className="mt-8">
+                  <h3 className="font-semibold mb-4">Others Studying Now</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {participants?.map((participant) => (
-                      <div key={participant.user_id} className="flex items-center gap-3 p-2 bg-gray-800/50 rounded-lg">
-                        <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                          {participant.profiles?.username?.charAt(0) || '?'}
-                        </div>
-                        <div className="flex-1">
-                          <div className="text-sm">{participant.profiles?.username || 'Anonymous'}</div>
-                          <div className="w-full bg-gray-800 rounded-full h-2 mt-1">
-                            <div className="bg-green-500 h-2 rounded-full" style={{ width: '45%' }}></div>
+                      <div key={participant.user_id} className="bg-gray-800/50 rounded-xl p-4">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-10 h-10 rounded-full bg-purple-900 flex items-center justify-center">
+                            {participant.profiles?.username?.[0] || "?"}
+                          </div>
+                          <div>
+                            <div className="font-medium">{participant.profiles?.username || "Anonymous"}</div>
+                            <div className="text-xs text-gray-400">Studying for 0h 45m</div>
                           </div>
                         </div>
+                        <div className="w-full bg-gray-700 rounded-full h-2 mb-2">
+                          <div className="bg-blue-500 h-2 rounded-full w-3/4"></div>
+                        </div>
+                        <div className="text-xs text-gray-400">75% complete</div>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
               
-              <div className="flex gap-4 justify-center mt-8">
-                <Button 
-                  onClick={handleTogglePause} 
-                  className={isPaused ? "bg-green-500" : "bg-yellow-500"}
-                >
-                  {isPaused ? <Play className="mr-2 h-4 w-4" /> : <Pause className="mr-2 h-4 w-4" />}
-                  {isPaused ? "Resume" : "Pause"}
-                </Button>
-                <Button 
-                  onClick={handleEndSession}
-                  variant="destructive"
-                  disabled={sessionEnded}
-                >
-                  <X className="mr-2 h-4 w-4" />
-                  End Session
-                </Button>
+              <div className="space-y-6">
+                <ParticipantsList />
+                
+                <div className="bg-gray-900/70 p-4 rounded-xl">
+                  <h3 className="font-semibold mb-3">Session Progress</h3>
+                  <div className="w-full bg-gray-800 rounded-full h-3">
+                    <div 
+                      className="bg-blue-500 h-3 rounded-full" 
+                      style={{ width: `${Math.min(100, (elapsedTime / (7200)) * 100)}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-gray-400 text-sm mt-2">
+                    Duration: {formatTime(elapsedTime)} 
+                    {isPaused && <span className="text-amber-400 ml-2">(Paused)</span>}
+                  </p>
+                </div>
+                
+                <div className="bg-gray-900/70 p-4 rounded-xl">
+                  <h3 className="font-semibold mb-3">Focus Mode</h3>
+                  <p className="text-gray-400 text-sm mb-3">
+                    Hide all UI elements except the timer to maximize focus
+                  </p>
+                  <Button className="w-full">Enter Focus Mode</Button>
+                </div>
               </div>
             </div>
+            
+            {!sessionEnded && <SessionControls />}
           </div>
-        );
-        
-      case 'task_based':
-        return (
-          <div className="space-y-8">
-            <div className="bg-gray-900/50 rounded-xl p-6">
-              <h2 className="text-xl font-semibold mb-4">Task-Based Study Room</h2>
-              
-              <div className="grid md:grid-cols-2 gap-8">
-                <div>
-                  <div className="text-center mb-6">
-                    <div className="text-5xl font-bold font-mono">{formatTime(elapsedTime)}</div>
-                    <p className="text-gray-400 mt-2">Study duration</p>
+        </div>
+      );
+    
+    case 'task_based':
+      return (
+        <div className="min-h-screen bg-gray-950 text-white p-4 md:p-8">
+          <div className="max-w-7xl mx-auto space-y-8">
+            <SessionHeader />
+            
+            <div className="grid md:grid-cols-3 gap-8">
+              <div className="md:col-span-2 bg-gray-900/50 backdrop-blur-xl rounded-xl p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-semibold">Task-Based Study Session</h2>
+                  <div className="bg-orange-900/30 text-orange-400 px-3 py-1 rounded-full text-sm">
+                    {completedTasksPercentage}% Complete
                   </div>
-                  
-                  <div className="bg-gray-900/70 p-4 rounded-xl">
-                    <h3 className="font-semibold mb-3 flex items-center text-purple-300">
-                      <Target className="mr-2 h-4 w-4" />
-                      Your Study Tasks
-                    </h3>
-                    
-                    <div className="space-y-2 mt-4">
-                      {tasks.length > 0 ? (
-                        tasks.map(task => (
-                          <div 
-                            key={task.id} 
-                            className={`flex items-center gap-2 p-3 rounded-lg transition-colors ${
-                              task.completed ? 'bg-green-900/30 text-green-300' : 'bg-gray-800/50'
-                            }`}
-                          >
-                            <button 
-                              onClick={() => handleToggleTask(task.id)}
-                              disabled={sessionEnded}
-                              className="flex-shrink-0"
-                            >
-                              <div className={`w-5 h-5 rounded-full flex items-center justify-center border ${
-                                task.completed ? 'border-green-500 bg-green-500/30' : 'border-gray-500'
-                              }`}>
-                                {task.completed && <CheckCircle className="w-4 h-4 text-green-300" />}
-                              </div>
-                            </button>
-                            <span className={task.completed ? 'line-through opacity-70' : ''}>{task.text}</span>
+                </div>
+                
+                <div className="space-y-4">
+                  {tasks.length > 0 ? (
+                    <>
+                      {tasks.map((task) => (
+                        <div 
+                          key={task.id} 
+                          className={`flex items-start gap-3 p-4 rounded-lg transition-colors ${
+                            task.completed ? 'bg-gray-800/30 text-gray-400' : 'bg-gray-800/60'
+                          }`}
+                        >
+                          <Checkbox 
+                            checked={task.completed} 
+                            onCheckedChange={() => handleToggleTask(task.id)}
+                            className={task.completed ? 'border-green-500 bg-green-500' : ''}
+                          />
+                          <div className="flex-1">
+                            <p className={task.completed ? 'line-through' : ''}>{task.text}</p>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {completedTasksPercentage === 100 && (
+                        <div className="mt-8 text-center p-4 bg-green-900/20 border border-green-700/30 rounded-xl">
+                          <h3 className="text-xl font-semibold text-green-400">🎉 All Tasks Completed!</h3>
+                          <p className="mt-2 text-gray-300">Great job! You've finished all your study tasks.</p>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-center p-8 bg-gray-800/30 rounded-xl">
+                      <CheckSquare className="w-12 h-12 mx-auto mb-4 text-gray-500" />
+                      <h3 className="text-lg font-medium mb-2">No Tasks Available</h3>
+                      <p className="text-gray-400">
+                        This session doesn't have any specific tasks to complete.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="space-y-6">
+                <ParticipantsList />
+                
+                <div className="bg-gray-900/70 p-4 rounded-xl">
+                  <h3 className="font-semibold mb-3">Session Progress</h3>
+                  <div className="w-full bg-gray-800 rounded-full h-3">
+                    <div 
+                      className="bg-orange-500 h-3 rounded-full" 
+                      style={{ width: `${Math.min(100, (elapsedTime / (7200)) * 100)}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-gray-400 text-sm mt-2">
+                    Duration: {formatTime(elapsedTime)} 
+                    {isPaused && <span className="text-amber-400 ml-2">(Paused)</span>}
+                  </p>
+                </div>
+                
+                <div className="bg-gray-900/70 p-4 rounded-xl">
+                  <h3 className="font-semibold mb-3">Task Completion</h3>
+                  <div className="w-full bg-gray-800 rounded-full h-3">
+                    <div 
+                      className="bg-orange-500 h-3 rounded-full" 
+                      style={{ width: `${completedTasksPercentage}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-gray-400 text-sm mt-2">
+                    {tasks.filter(t => t.completed).length} of {tasks.length} tasks completed
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            {!sessionEnded && <SessionControls />}
+          </div>
+        </div>
+      );
+    
+    case 'help_session':
+      return (
+        <div className="min-h-screen bg-gray-950 text-white p-4 md:p-8">
+          <div className="max-w-7xl mx-auto space-y-8">
+            <SessionHeader />
+            
+            <div className="grid md:grid-cols-3 gap-8">
+              <div className="md:col-span-2 bg-gray-900/50 backdrop-blur-xl rounded-xl p-6">
+                <h2 className="text-xl font-semibold mb-6">Help Session</h2>
+                
+                <div className="bg-gray-900/70 p-4 rounded-xl mb-6">
+                  <h3 className="font-semibold text-yellow-300">Help Topic:</h3>
+                  <p className="mt-2">
+                    {session.metadata && typeof session.metadata === 'object' ? 
+                      (session.metadata as SessionMetadata).helpTopic || session.description || "No help topic specified"
+                      : session.description || "No help topic specified"}
+                  </p>
+                </div>
+                
+                <div className="grid md:grid-cols-2 gap-8">
+                  <div className="space-y-4">
+                    <h3 className="font-semibold">Session Chat</h3>
+                    <div className="bg-gray-800/50 rounded-xl p-4 h-[300px] overflow-y-auto flex flex-col gap-3">
+                      {messages.length > 0 ? (
+                        messages.map((msg) => (
+                          <div key={msg.id} className="flex flex-col">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{msg.user}</span>
+                              <span className="text-xs text-gray-500">
+                                {format(new Date(msg.timestamp), 'p')}
+                              </span>
+                            </div>
+                            <p className="pl-1">{msg.text}</p>
                           </div>
                         ))
                       ) : (
-                        <div className="text-gray-400 italic text-sm">No tasks defined for this session.</div>
+                        <div className="flex-1 flex items-center justify-center text-gray-500">
+                          <div className="text-center">
+                            <Hash className="w-10 h-10 mx-auto mb-2" />
+                            <p>No messages yet</p>
+                            <p className="text-sm">Ask your question to get help</p>
+                          </div>
+                        </div>
                       )}
                     </div>
                     
-                    <div className="mt-4">
-                      <div className="bg-gray-800 rounded-full h-4">
-                        <div 
-                          className="bg-gradient-to-r from-green-500 to-emerald-500 h-4 rounded-full transition-all duration-500"
-                          style={{ width: `${progress}%` }}
-                        ></div>
-                      </div>
-                      <div className="text-sm text-right mt-1">{progress}% complete</div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        placeholder="Type your question or answer..."
+                        className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white"
+                      />
+                      <Button onClick={handleSendMessage}>Send</Button>
                     </div>
                   </div>
-                </div>
-                
-                <div>
-                  <div className="bg-gray-900/70 rounded-xl p-4 mb-4">
-                    <h3 className="font-semibold mb-3 flex items-center">
-                      <Users className="mr-2 h-4 w-4" />
-                      Participants ({participants?.length || 0})
-                    </h3>
-                    <div className="space-y-3 max-h-40 overflow-auto">
+                  
+                  <div className="space-y-4">
+                    <h3 className="font-semibold">Helpers Available</h3>
+                    <div className="bg-gray-800/50 rounded-xl p-4 min-h-[300px]">
                       {participants?.map((participant) => (
-                        <div key={participant.user_id} className="flex items-center gap-3 p-2 bg-gray-800/50 rounded-lg">
-                          <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                            {participant.profiles?.username?.charAt(0) || '?'}
+                        <div 
+                          key={participant.user_id} 
+                          className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-700/30 transition-colors"
+                        >
+                          <div className="w-10 h-10 rounded-full bg-yellow-900/40 flex items-center justify-center">
+                            {participant.profiles?.username?.[0] || "?"}
                           </div>
                           <div className="flex-1">
-                            <div className="text-sm">{participant.profiles?.username || 'Anonymous'}</div>
-                            <div className="w-full bg-gray-800 rounded-full h-2 mt-1">
-                              <div className="bg-green-500 h-2 rounded-full" style={{ width: '60%' }}></div>
-                            </div>
+                            <div className="font-medium">{participant.profiles?.username || "Anonymous"}</div>
+                            <div className="text-xs text-gray-400">Available to help</div>
                           </div>
+                          <Button variant="outline" size="sm">
+                            Ask
+                          </Button>
                         </div>
                       ))}
-                    </div>
-                  </div>
-                  
-                  <div className="bg-gray-900/70 rounded-xl p-4">
-                    <h3 className="font-semibold mb-3 flex items-center">
-                      <MessageSquare className="mr-2 h-4 w-4" />
-                      Quick Messages
-                    </h3>
-                    <div className="space-y-2">
-                      <Button variant="ghost" className="w-full justify-start text-sm" disabled={sessionEnded}>
-                        🎉 Great job everyone!
-                      </Button>
-                      <Button variant="ghost" className="w-full justify-start text-sm" disabled={sessionEnded}>
-                        💪 Keep going!
-                      </Button>
-                      <Button variant="ghost" className="w-full justify-start text-sm" disabled={sessionEnded}>
-                        🔥 Making good progress!
-                      </Button>
-                      <Button variant="ghost" className="w-full justify-start text-sm" disabled={sessionEnded}>
-                        ⏰ Almost done!
-                      </Button>
                     </div>
                   </div>
                 </div>
               </div>
               
-              <div className="flex gap-4 justify-center mt-8">
-                <Button 
-                  onClick={handleTogglePause} 
-                  className={isPaused ? "bg-green-500" : "bg-yellow-500"}
-                >
-                  {isPaused ? <Play className="mr-2 h-4 w-4" /> : <Pause className="mr-2 h-4 w-4" />}
-                  {isPaused ? "Resume" : "Pause"}
-                </Button>
-                <Button 
-                  onClick={handleEndSession}
-                  variant="destructive"
-                  disabled={sessionEnded}
-                >
-                  <X className="mr-2 h-4 w-4" />
-                  End Session
-                </Button>
-              </div>
-            </div>
-          </div>
-        );
-        
-      case 'help_session':
-        return (
-          <div className="space-y-8">
-            <div className="bg-gray-900/50 rounded-xl p-6">
-              <h2 className="text-xl font-semibold mb-4">Help Session</h2>
-              
-              <div className="bg-gray-900/70 p-4 rounded-xl mb-6">
-                <h3 className="font-semibold text-yellow-300">Help Topic:</h3>
-                <p className="mt-2">
-                  {session.metadata && typeof session.metadata === 'object' ? 
-                    (session.metadata as SessionMetadata).helpTopic || session.description || "No help topic specified"
-                    : session.description || "No help topic specified"}
-                </p>
-              </div>
-              
-              <div className="grid md:grid-cols-2 gap-8">
-                <div className="bg-gray-900/70 rounded-xl p-4">
-                  <h3 className="font-semibold mb-3 flex items-center">
-                    <MessageSquare className="mr-2 h-4 w-4" />
-                    Chat
-                  </h3>
-                  <div className="bg-gray-800/70 rounded-xl p-4 h-60 overflow-y-auto mb-3">
-                    <div className="opacity-50 text-center text-sm">Chat messages will appear here</div>
+              <div className="space-y-6">
+                <ParticipantsList />
+                
+                <div className="bg-gray-900/70 p-4 rounded-xl">
+                  <h3 className="font-semibold mb-3">Session Progress</h3>
+                  <div className="w-full bg-gray-800 rounded-full h-3">
+                    <div 
+                      className="bg-yellow-500 h-3 rounded-full" 
+                      style={{ width: `${Math.min(100, (elapsedTime / (7200)) * 100)}%` }}
+                    ></div>
                   </div>
-                  <div className="flex gap-2">
-                    <input 
-                      type="text"
-                      placeholder="Type a message..."
-                      className="flex-1 bg-gray-800 border border-gray-700 rounded-md px-3 py-2"
-                      disabled={sessionEnded}
-                    />
-                    <Button disabled={sessionEnded}>Send</Button>
-                  </div>
+                  <p className="text-gray-400 text-sm mt-2">
+                    Duration: {formatTime(elapsedTime)} 
+                    {isPaused && <span className="text-amber-400 ml-2">(Paused)</span>}
+                  </p>
                 </div>
                 
-                <div>
-                  <div className="text-center mb-6">
-                    <div className="text-4xl font-bold font-mono">{formatTime(elapsedTime)}</div>
-                    <p className="text-gray-400 mt-2">Session duration</p>
-                  </div>
-                  
-                  <div className="bg-gray-900/70 rounded-xl p-4">
-                    <h3 className="font-semibold mb-3 flex items-center">
-                      <Users className="mr-2 h-4 w-4" />
-                      Participants ({participants?.length || 0})
-                    </h3>
-                    <div className="space-y-3 max-h-40 overflow-auto">
-                      {participants?.map((participant) => (
-                        <div key={participant.user_id} className="flex items-center gap-3 p-2 bg-gray-800/50 rounded-lg">
-                          <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                            {participant.profiles?.username?.charAt(0) || '?'}
-                          </div>
-                          <span className="text-sm">{participant.profiles?.username || 'Anonymous'}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                <div className="flex gap-4 justify-center mt-8">
+                  <Button 
+                    onClick={handleEndSession}
+                    className="bg-green-600 hover:bg-green-700"
+                    disabled={sessionEnded}
+                  >
+                    Mark as Solved
+                  </Button>
                 </div>
               </div>
-              
-              <div className="flex gap-4 justify-center mt-8">
-                <Button 
-                  onClick={handleEndSession}
-                  className="bg-green-600 hover:bg-green-700"
-                  disabled={sessionEnded}
-                >
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  Problem Solved
-                </Button>
-                <Button 
-                  onClick={handleEndSession}
-                  variant="destructive"
-                  disabled={sessionEnded}
-                >
-                  <X className="mr-2 h-4 w-4" />
-                  End Session
-                </Button>
-              </div>
             </div>
+            
+            {!sessionEnded && <SessionControls />}
           </div>
-        );
+        </div>
+      );
         
-      case 'vibe_based':
-        const vibeSettings = session.vibe_settings as VibeSettings || {};
-        const vibeTheme = vibeSettings.theme || 'deep_focus';
-        const vibeColors: Record<string, string> = {
-          deep_focus: 'from-blue-900 to-indigo-900',
-          chill_cafe: 'from-amber-900 to-orange-900', 
-          sprint_mode: 'from-red-900 to-pink-900'
-        };
-        const vibeBg = vibeColors[vibeTheme] || vibeColors.deep_focus;
-        
-        return (
-          <div className="space-y-8">
+    case 'vibe_based':
+      const vibeSettings = session.vibe_settings as VibeSettings || {};
+      const vibeTheme = vibeSettings.theme || 'deep_focus';
+      const vibeColors: Record<string, string> = {
+        deep_focus: 'from-blue-900 to-indigo-900',
+        chill_cafe: 'from-amber-900 to-orange-900', 
+        sprint_mode: 'from-red-900 to-pink-900'
+      };
+      const vibeBg = vibeColors[vibeTheme] || vibeColors.deep_focus;
+      
+      return (
+        <div className="min-h-screen bg-gray-950 text-white p-4 md:p-8">
+          <div className="max-w-7xl mx-auto space-y-8">
+            <SessionHeader />
+            
             <div className={`rounded-xl p-6 bg-gradient-to-br ${vibeBg}`}>
               <h2 className="text-xl font-semibold mb-4">
                 {vibeSettings.name || "Vibe Study Session"}
@@ -562,9 +652,9 @@ const SessionPage = () => {
               
               <div className="grid md:grid-cols-2 gap-8">
                 <div className="space-y-6">
-                  <div className="text-center">
-                    <div className="text-5xl font-bold font-mono">{formatTime(elapsedTime)}</div>
-                    <p className="text-gray-300 mt-2">Vibe time</p>
+                  <div className="bg-black/30 backdrop-blur-sm p-4 rounded-xl flex gap-4 items-center">
+                    <Clock className="w-12 h-12 text-white/70" />
+                    <div className="text-4xl font-mono font-bold">{formatTime(elapsedTime)}</div>
                   </div>
                   
                   <div className="bg-black/30 backdrop-blur-sm p-4 rounded-xl">
@@ -578,108 +668,72 @@ const SessionPage = () => {
                   
                   {vibeTheme === 'chill_cafe' && (
                     <div className="bg-black/30 backdrop-blur-sm p-4 rounded-xl">
-                      <h3 className="font-semibold mb-3 flex items-center">
-                        <span className="mr-2">🎵</span> Ambient Music
+                      <h3 className="font-semibold mb-3 flex items-center gap-2">
+                        <Volume2 className="w-5 h-5" />
+                        Lofi Background Music
                       </h3>
-                      <div className="flex items-center justify-between">
-                        <span>Lo-fi beats</span>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" className="h-8 w-8 p-0">
-                            <Pause className="h-4 w-4" />
-                          </Button>
-                          <div className="w-24 bg-gray-800 rounded-full h-2">
-                            <div className="bg-white h-2 rounded-full" style={{ width: '60%' }}></div>
-                          </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-1 bg-orange-500/50 rounded-full">
+                          <div className="w-1/2 h-full bg-orange-500 rounded-full"></div>
                         </div>
+                        <span className="text-xs">1:30 / 3:00</span>
                       </div>
+                      <p className="text-gray-400 text-sm mt-2">Lofi Hip Hop Mix - Beats to Study To</p>
                     </div>
                   )}
                 </div>
                 
-                <div className="bg-black/30 backdrop-blur-sm rounded-xl p-4">
-                  <h3 className="font-semibold mb-3 flex items-center">
-                    <Users className="mr-2 h-4 w-4" />
-                    Vibe Buddies ({participants?.length || 0})
-                  </h3>
-                  <div className="space-y-3 max-h-60 overflow-auto">
-                    {participants?.map((participant) => (
-                      <div key={participant.user_id} className="flex items-center gap-3 p-2 bg-black/30 rounded-lg">
-                        <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                          {participant.profiles?.username?.charAt(0) || '?'}
-                        </div>
-                        <div className="flex-1">
-                          <div className="text-sm">{participant.profiles?.username || 'Anonymous'}</div>
-                          <div className="w-full bg-gray-800 rounded-full h-2 mt-1">
-                            <div className="bg-white h-2 rounded-full" style={{ width: '70%' }}></div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                <div className="space-y-6">
+                  <div className="bg-black/30 backdrop-blur-sm p-4 rounded-xl">
+                    <h3 className="font-semibold mb-3">Current Vibe</h3>
+                    <div className="flex gap-2 flex-wrap">
+                      {vibeTheme === 'deep_focus' && (
+                        <>
+                          <span className="px-3 py-1 rounded-full bg-blue-900/50 text-blue-300 text-sm">Deep Focus</span>
+                          <span className="px-3 py-1 rounded-full bg-blue-900/50 text-blue-300 text-sm">Minimal Distractions</span>
+                          <span className="px-3 py-1 rounded-full bg-blue-900/50 text-blue-300 text-sm">Flow State</span>
+                        </>
+                      )}
+                      {vibeTheme === 'chill_cafe' && (
+                        <>
+                          <span className="px-3 py-1 rounded-full bg-orange-900/50 text-orange-300 text-sm">Chill Café</span>
+                          <span className="px-3 py-1 rounded-full bg-orange-900/50 text-orange-300 text-sm">Lofi Music</span>
+                          <span className="px-3 py-1 rounded-full bg-orange-900/50 text-orange-300 text-sm">Relaxed Focus</span>
+                        </>
+                      )}
+                      {vibeTheme === 'sprint_mode' && (
+                        <>
+                          <span className="px-3 py-1 rounded-full bg-red-900/50 text-red-300 text-sm">Sprint Mode</span>
+                          <span className="px-3 py-1 rounded-full bg-red-900/50 text-red-300 text-sm">High Intensity</span>
+                          <span className="px-3 py-1 rounded-full bg-red-900/50 text-red-300 text-sm">Timed Challenges</span>
+                        </>
+                      )}
+                    </div>
                   </div>
+                  
+                  <ParticipantsList />
                 </div>
               </div>
-              
-              <div className="flex gap-4 justify-center mt-8">
-                <Button 
-                  onClick={handleTogglePause} 
-                  className={`bg-black/40 hover:bg-black/60 ${isPaused ? "text-green-400" : "text-yellow-400"}`}
-                >
-                  {isPaused ? <Play className="mr-2 h-4 w-4" /> : <Pause className="mr-2 h-4 w-4" />}
-                  {isPaused ? "Resume" : "Pause"}
-                </Button>
-                <Button 
-                  onClick={handleEndSession}
-                  className="bg-black/40 hover:bg-black/60 text-red-400"
-                  disabled={sessionEnded}
-                >
-                  <X className="mr-2 h-4 w-4" />
-                  End Session
-                </Button>
-              </div>
             </div>
+            
+            {!sessionEnded && <SessionControls />}
           </div>
-        );
-      
-      default:
-        return (
-          <div className="text-center my-8">
-            <p>Unknown session type. Please contact support.</p>
-          </div>
-        );
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-black text-white p-4 md:p-8">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-6xl mx-auto space-y-6"
-      >
-        {/* Header with session info */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gray-900/50 backdrop-blur-xl rounded-xl p-6 border border-purple-500/20">
-          <div>
-            <h1 className="text-2xl font-bold">{session.title}</h1>
-            <p className="text-gray-400">{session.subject}</p>
-            <div className="flex items-center gap-2 text-gray-400 mt-2">
-              <Clock className="w-4 h-4" />
-              <span>{format(new Date(session.start_time), 'PPp')} - {format(new Date(session.end_time), 'p')}</span>
-            </div>
-          </div>
-          
-          <Button 
-            className="bg-purple-500 hover:bg-purple-600"
-            onClick={() => navigate("/study-sessions")}
-          >
-            Back to Sessions
-          </Button>
         </div>
-        
-        {/* Session content */}
-        {renderSessionContent()}
-      </motion.div>
-    </div>
-  );
+      );
+      
+    default:
+      return (
+        <div className="min-h-screen bg-gray-950 text-white p-4 md:p-8">
+          <div className="max-w-7xl mx-auto">
+            <h1 className="text-3xl font-bold">Unknown Session Type</h1>
+            <p className="text-gray-400 mt-2 mb-6">This session type is not recognized.</p>
+            <Button onClick={() => navigate('/study-sessions')}>
+              Back to Study Sessions
+            </Button>
+          </div>
+        </div>
+      );
+  }
 };
 
 export default SessionPage;
