@@ -1,51 +1,49 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Header from "./components/Header";
-import Footer from "./components/Footer";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Sidebar from "./components/navigation/Sidebar";
 import Index from "./pages/Index";
-import Welcome from "./pages/Welcome";
+import Posts from "./pages/Posts";
 import Login from "./pages/Login";
+import NotFound from "./pages/NotFound";
+import Profile from "./pages/Profile";
 import Progress from "./pages/Progress";
+import Settings from "./pages/Settings";
 import StudySessions from "./pages/StudySessions";
 import Messages from "./pages/Messages";
-import Posts from "./pages/Posts";
-import NotFound from "./pages/NotFound";
-import Profile from "@/pages/Profile";
+import ZenMode from "./pages/ZenMode";
+import Welcome from "./pages/Welcome";
+import SessionPage from "./pages/SessionPage";
+import { Toaster } from "sonner";
+import { useState } from "react";
+import "./App.css";
 
-const queryClient = new QueryClient();
+function App() {
+  const [count, setCount] = useState(0);
 
-const App = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <div className="min-h-screen bg-black flex flex-col">
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Header />
-            <main className="flex-grow pt-16">
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/welcome" element={<Welcome />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/progress" element={<Progress />} />
-                <Route path="/study-sessions" element={<StudySessions />} />
-                <Route path="/messages" element={<Messages />} />
-                <Route path="/posts" element={<Posts />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </main>
-            <Footer />
-          </BrowserRouter>
+    <Router>
+      <div className="flex h-screen">
+        <Sidebar />
+        <div className="flex-1 overflow-auto">
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/posts" element={<Posts />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/progress" element={<Progress />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/study-sessions" element={<StudySessions />} />
+            <Route path="/session/:sessionId" element={<SessionPage />} />
+            <Route path="/messages" element={<Messages />} />
+            <Route path="/zen-mode" element={<ZenMode />} />
+            <Route path="/welcome" element={<Welcome />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
         </div>
-      </TooltipProvider>
-    </QueryClientProvider>
+      </div>
+      <Toaster position="top-center" />
+    </Router>
   );
-};
+}
 
 export default App;

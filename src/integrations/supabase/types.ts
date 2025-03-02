@@ -200,10 +200,13 @@ export type Database = {
           description: string | null
           end_time: string
           id: string
+          metadata: Json | null
+          session_type: string
           squad_id: string | null
           start_time: string
           subject: string
           title: string
+          vibe_settings: Json | null
         }
         Insert: {
           created_at?: string
@@ -211,10 +214,13 @@ export type Database = {
           description?: string | null
           end_time: string
           id?: string
+          metadata?: Json | null
+          session_type?: string
           squad_id?: string | null
           start_time: string
           subject: string
           title: string
+          vibe_settings?: Json | null
         }
         Update: {
           created_at?: string
@@ -222,10 +228,13 @@ export type Database = {
           description?: string | null
           end_time?: string
           id?: string
+          metadata?: Json | null
+          session_type?: string
           squad_id?: string | null
           start_time?: string
           subject?: string
           title?: string
+          vibe_settings?: Json | null
         }
         Relationships: [
           {

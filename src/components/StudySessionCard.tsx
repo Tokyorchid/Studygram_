@@ -8,6 +8,7 @@ import { Clock, Target, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface StudySessionCardProps {
   id: string;
@@ -17,6 +18,7 @@ interface StudySessionCardProps {
   endTime: string;
   description?: string;
   goals?: string[];
+  sessionType?: string;
 }
 
 const StudySessionCard = ({ 
@@ -26,9 +28,11 @@ const StudySessionCard = ({
   startTime, 
   endTime, 
   description, 
-  goals 
+  goals,
+  sessionType = "instant_pod"
 }: StudySessionCardProps) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [isEntering, setIsEntering] = useState(false);
 
   const { data: participantCount, refetch: refetchParticipants } = useQuery({
@@ -105,22 +109,7 @@ const StudySessionCard = ({
   };
 
   const handleEnterSession = () => {
-    // Open the session in a new "room" - for now we'll just show a toast
-    toast({
-      title: "Entering study session",
-      description: "Welcome to " + title + "!",
-    });
-
-    // Show a simulated study room launch
-    setTimeout(() => {
-      const sessionEl = document.getElementById("session-" + id);
-      if (sessionEl) {
-        sessionEl.classList.add("border-green-500", "scale-105");
-        setTimeout(() => {
-          sessionEl.classList.remove("border-green-500", "scale-105");
-        }, 2000);
-      }
-    }, 500);
+    navigate(`/session/${id}`);
   };
 
   const isSessionActive = () => {
@@ -130,6 +119,21 @@ const StudySessionCard = ({
     return now >= start && now <= end;
   };
 
+  // Function to get session type badge color
+  const getSessionTypeBadge = () => {
+    const types: Record<string, { color: string, label: string }> = {
+      instant_pod: { color: 'bg-green-500/20 text-green-300', label: 'Instant Pod' },
+      silent_costudy: { color: 'bg-blue-500/20 text-blue-300', label: 'Silent Co-Study' },
+      task_based: { color: 'bg-orange-500/20 text-orange-300', label: 'Task-Based' },
+      help_session: { color: 'bg-yellow-500/20 text-yellow-300', label: 'Help Session' },
+      vibe_based: { color: 'bg-purple-500/20 text-purple-300', label: 'Vibe Session' }
+    };
+    
+    return types[sessionType] || types.instant_pod;
+  };
+
+  const typeBadge = getSessionTypeBadge();
+
   return (
     <motion.div
       id={"session-" + id}
@@ -138,7 +142,12 @@ const StudySessionCard = ({
     >
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h3 className="font-semibold text-lg text-white">{title}</h3>
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="font-semibold text-lg text-white">{title}</h3>
+            <span className={`px-2 py-1 rounded-full text-xs ${typeBadge.color}`}>
+              {typeBadge.label}
+            </span>
+          </div>
           <p className="text-gray-400">{subject}</p>
         </div>
         {!isJoined ? (
