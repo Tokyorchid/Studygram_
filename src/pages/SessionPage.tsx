@@ -9,6 +9,20 @@ import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 
+// Define better types for session metadata and vibe settings
+interface SessionMetadata {
+  tasks?: Array<{ id: string; text: string; completed: boolean }>;
+  goal?: string;
+  helpTopic?: string;
+  [key: string]: any;
+}
+
+interface VibeSettings {
+  theme?: 'deep_focus' | 'chill_cafe' | 'sprint_mode';
+  name?: string;
+  [key: string]: any;
+}
+
 const SessionPage = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const { toast } = useToast();
@@ -94,8 +108,12 @@ const SessionPage = () => {
 
   // Initialize tasks for task-based sessions
   useEffect(() => {
-    if (session?.session_type === 'task_based' && session.metadata?.tasks) {
-      setTasks(session.metadata.tasks);
+    if (session?.session_type === 'task_based' && session.metadata) {
+      // Safely access metadata with type checking
+      const sessionMetadata = session.metadata as SessionMetadata;
+      if (sessionMetadata.tasks) {
+        setTasks(sessionMetadata.tasks);
+      }
     }
   }, [session]);
 
@@ -451,7 +469,11 @@ const SessionPage = () => {
               
               <div className="bg-gray-900/70 p-4 rounded-xl mb-6">
                 <h3 className="font-semibold text-yellow-300">Help Topic:</h3>
-                <p className="mt-2">{session.metadata?.helpTopic || session.description || "No help topic specified"}</p>
+                <p className="mt-2">
+                  {session.metadata && typeof session.metadata === 'object' ? 
+                    (session.metadata as SessionMetadata).helpTopic || session.description || "No help topic specified"
+                    : session.description || "No help topic specified"}
+                </p>
               </div>
               
               <div className="grid md:grid-cols-2 gap-8">
@@ -502,7 +524,6 @@ const SessionPage = () => {
               <div className="flex gap-4 justify-center mt-8">
                 <Button 
                   onClick={handleEndSession}
-                  variant="success"
                   className="bg-green-600 hover:bg-green-700"
                   disabled={sessionEnded}
                 >
@@ -523,19 +544,20 @@ const SessionPage = () => {
         );
         
       case 'vibe_based':
-        const vibeTheme = session.vibe_settings?.theme || 'deep_focus';
-        const vibeColors = {
+        const vibeSettings = session.vibe_settings as VibeSettings || {};
+        const vibeTheme = vibeSettings.theme || 'deep_focus';
+        const vibeColors: Record<string, string> = {
           deep_focus: 'from-blue-900 to-indigo-900',
           chill_cafe: 'from-amber-900 to-orange-900', 
           sprint_mode: 'from-red-900 to-pink-900'
         };
-        const vibeBg = vibeColors[vibeTheme as keyof typeof vibeColors] || vibeColors.deep_focus;
+        const vibeBg = vibeColors[vibeTheme] || vibeColors.deep_focus;
         
         return (
           <div className="space-y-8">
             <div className={`rounded-xl p-6 bg-gradient-to-br ${vibeBg}`}>
               <h2 className="text-xl font-semibold mb-4">
-                {session.vibe_settings?.name || "Vibe Study Session"}
+                {vibeSettings.name || "Vibe Study Session"}
               </h2>
               
               <div className="grid md:grid-cols-2 gap-8">
@@ -547,7 +569,11 @@ const SessionPage = () => {
                   
                   <div className="bg-black/30 backdrop-blur-sm p-4 rounded-xl">
                     <h3 className="font-semibold mb-3">Session Goal</h3>
-                    <p>{session.metadata?.goal || session.description || "Focus and be productive"}</p>
+                    <p>
+                      {session.metadata && typeof session.metadata === 'object' ? 
+                        (session.metadata as SessionMetadata).goal || session.description || "Focus and be productive"
+                        : session.description || "Focus and be productive"}
+                    </p>
                   </div>
                   
                   {vibeTheme === 'chill_cafe' && (
