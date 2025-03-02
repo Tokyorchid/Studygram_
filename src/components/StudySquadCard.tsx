@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Users } from "lucide-react";
 import { motion } from "framer-motion";
+import { useState } from "react";
 
 interface StudySquadCardProps {
   id: string;
@@ -16,6 +17,7 @@ interface StudySquadCardProps {
 
 const StudySquadCard = ({ id, name, description, active }: StudySquadCardProps) => {
   const { toast } = useToast();
+  const [isJoining, setIsJoining] = useState(false);
 
   const { data: memberCount, refetch: refetchMembers } = useQuery({
     queryKey: ['squadMembers', id],
@@ -45,6 +47,7 @@ const StudySquadCard = ({ id, name, description, active }: StudySquadCardProps) 
 
   const handleJoin = async () => {
     try {
+      setIsJoining(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast({
@@ -52,6 +55,7 @@ const StudySquadCard = ({ id, name, description, active }: StudySquadCardProps) 
           description: "You need to be logged in to join a squad",
           variant: "destructive",
         });
+        setIsJoining(false);
         return;
       }
 
@@ -66,6 +70,14 @@ const StudySquadCard = ({ id, name, description, active }: StudySquadCardProps) 
         description: "Welcome to the squad!",
       });
 
+      // Show follow-up toast with next steps
+      setTimeout(() => {
+        toast({
+          title: "What's next?",
+          description: "Check out upcoming study sessions for this squad",
+        });
+      }, 1000);
+
       refetchMembers();
       refetchJoined();
     } catch (error: any) {
@@ -74,11 +86,35 @@ const StudySquadCard = ({ id, name, description, active }: StudySquadCardProps) 
         description: error.message,
         variant: "destructive",
       });
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
+  const handleViewSquad = () => {
+    // In a real implementation, this would navigate to a squad detail page
+    toast({
+      title: `Squad: ${name}`,
+      description: "Viewing squad details and sessions",
+    });
+    
+    // Highlight the card to show it's being viewed
+    const squadEl = document.getElementById("squad-" + id);
+    if (squadEl) {
+      squadEl.classList.add("border-green-500", "scale-105");
+      setTimeout(() => {
+        squadEl.classList.remove("border-green-500", "scale-105");
+      }, 2000);
     }
   };
 
   return (
-    <motion.div whileHover={{ scale: 1.02 }} transition={{ duration: 0.2 }}>
+    <motion.div 
+      id={"squad-" + id}
+      whileHover={{ scale: 1.02 }} 
+      transition={{ duration: 0.2 }}
+      className="transition-all duration-300"
+    >
       <Card className="bg-gray-900/50 backdrop-blur-xl border border-purple-500/20">
         <CardContent className="p-6 space-y-4">
           <div className="flex items-center justify-between">
@@ -100,16 +136,17 @@ const StudySquadCard = ({ id, name, description, active }: StudySquadCardProps) 
           {!isJoined ? (
             <Button 
               onClick={handleJoin} 
+              disabled={isJoining}
               className="w-full bg-purple-500 hover:bg-purple-600"
             >
-              Join Squad
+              {isJoining ? "Joining..." : "Join Squad"}
             </Button>
           ) : (
             <Button 
-              disabled 
-              className="w-full bg-gray-700"
+              onClick={handleViewSquad}
+              className="w-full bg-green-500 hover:bg-green-600"
             >
-              Already Joined
+              View Squad
             </Button>
           )}
         </CardContent>
