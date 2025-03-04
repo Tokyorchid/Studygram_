@@ -19,16 +19,15 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "./App.css";
 
 function App() {
-  const [count, setCount] = useState(0);
   // Create a client
   const queryClient = new QueryClient();
 
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
-        <div className="flex h-screen">
+        <div className="app-container">
           <Sidebar />
-          <div className="flex-1 overflow-auto">
+          <main className="main-content">
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/posts" element={<Posts />} />
@@ -43,7 +42,7 @@ function App() {
               <Route path="/welcome" element={<Welcome />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </div>
+          </main>
         </div>
         <Toaster position="top-center" />
       </Router>
