@@ -18,7 +18,10 @@ const MobileHeader = ({ onMenuToggle }: MobileHeaderProps) => {
         <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
           <span className="text-sm font-bold text-white">S</span>
         </div>
-        <span className="text-lg font-bold ml-2 text-white hidden md:block">Studygram</span>
+        <div className="ml-2">
+          <span className="text-lg font-bold text-white hidden md:block">Studygram</span>
+          <span className="text-xs text-purple-300 hidden md:block italic">Even in the longest winter, your dreams won't freeze</span>
+        </div>
       </div>
       
       <button 

@@ -42,6 +42,10 @@ const BottomNav = () => {
         <User className="w-5 h-5 mb-1" />
         <span>Profile</span>
       </NavLink>
+      
+      <div className="hidden md:block absolute bottom-16 left-0 right-0 text-center text-xs text-purple-300 italic py-1">
+        Even in the longest winter, your dreams won't freeze
+      </div>
     </motion.nav>
   );
 };
