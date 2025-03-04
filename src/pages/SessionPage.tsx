@@ -8,6 +8,25 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
+import { Json } from "@/integrations/supabase/types";
+
+// Define types for our metadata structures
+interface TaskItem {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+
+interface SessionMetadata {
+  tasks?: TaskItem[];
+  helpTopic?: string;
+  goal?: string;
+}
+
+interface VibeSettings {
+  theme?: string;
+  name?: string;
+}
 
 const SessionPage = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -17,7 +36,7 @@ const SessionPage = () => {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [studyGoal, setStudyGoal] = useState("");
   const [progress, setProgress] = useState(0);
-  const [tasks, setTasks] = useState<{ id: string; text: string; completed: boolean }[]>([]);
+  const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [sessionEnded, setSessionEnded] = useState(false);
 
   // Fetch session details
@@ -94,8 +113,12 @@ const SessionPage = () => {
 
   // Initialize tasks for task-based sessions
   useEffect(() => {
-    if (session?.session_type === 'task_based' && session.metadata?.tasks) {
-      setTasks(session.metadata.tasks);
+    if (session?.session_type === 'task_based' && session.metadata) {
+      // Safely cast metadata to our type
+      const sessionMetadata = session.metadata as SessionMetadata;
+      if (sessionMetadata.tasks) {
+        setTasks(sessionMetadata.tasks);
+      }
     }
   }, [session]);
 
@@ -444,6 +467,8 @@ const SessionPage = () => {
         );
         
       case 'help_session':
+        // Type cast metadata to our interface
+        const helpMetadata = session.metadata as SessionMetadata;
         return (
           <div className="space-y-8">
             <div className="bg-gray-900/50 rounded-xl p-6">
@@ -451,7 +476,7 @@ const SessionPage = () => {
               
               <div className="bg-gray-900/70 p-4 rounded-xl mb-6">
                 <h3 className="font-semibold text-yellow-300">Help Topic:</h3>
-                <p className="mt-2">{session.metadata?.helpTopic || session.description || "No help topic specified"}</p>
+                <p className="mt-2">{helpMetadata?.helpTopic || session.description || "No help topic specified"}</p>
               </div>
               
               <div className="grid md:grid-cols-2 gap-8">
@@ -502,7 +527,7 @@ const SessionPage = () => {
               <div className="flex gap-4 justify-center mt-8">
                 <Button 
                   onClick={handleEndSession}
-                  variant="success"
+                  variant="default"
                   className="bg-green-600 hover:bg-green-700"
                   disabled={sessionEnded}
                 >
@@ -523,7 +548,9 @@ const SessionPage = () => {
         );
         
       case 'vibe_based':
-        const vibeTheme = session.vibe_settings?.theme || 'deep_focus';
+        // Type cast vibe_settings to our interface
+        const vibeSettings = session.vibe_settings as VibeSettings;
+        const vibeTheme = vibeSettings?.theme || 'deep_focus';
         const vibeColors = {
           deep_focus: 'from-blue-900 to-indigo-900',
           chill_cafe: 'from-amber-900 to-orange-900', 
@@ -535,7 +562,7 @@ const SessionPage = () => {
           <div className="space-y-8">
             <div className={`rounded-xl p-6 bg-gradient-to-br ${vibeBg}`}>
               <h2 className="text-xl font-semibold mb-4">
-                {session.vibe_settings?.name || "Vibe Study Session"}
+                {vibeSettings?.name || "Vibe Study Session"}
               </h2>
               
               <div className="grid md:grid-cols-2 gap-8">
@@ -547,7 +574,9 @@ const SessionPage = () => {
                   
                   <div className="bg-black/30 backdrop-blur-sm p-4 rounded-xl">
                     <h3 className="font-semibold mb-3">Session Goal</h3>
-                    <p>{session.metadata?.goal || session.description || "Focus and be productive"}</p>
+                    <p>
+                      {(session.metadata as SessionMetadata)?.goal || session.description || "Focus and be productive"}
+                    </p>
                   </div>
                   
                   {vibeTheme === 'chill_cafe' && (
