@@ -1,13 +1,21 @@
 
-import { motion } from "framer-motion";
-import { BarChart3, BookOpen, Home, MessageSquare, Settings, TrendingUp, User, Sun, Moon, LogOut, PenSquare } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  BarChart3, BookOpen, Home, MessageSquare, Settings, 
+  TrendingUp, User, Sun, Moon, LogOut, PenSquare, X 
+} from "lucide-react";
 import NavItem from "./NavItem";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 
-const Sidebar = () => {
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const [theme, setTheme] = useState("light");
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -80,48 +88,95 @@ const Sidebar = () => {
     ? "bg-gray-900 text-white" 
     : "bg-gray-100 text-gray-800";
 
+  const sidebarVariants = {
+    open: { 
+      x: 0,
+      opacity: 1,
+      transition: { type: "spring", stiffness: 300, damping: 30 }
+    },
+    closed: { 
+      x: "-100%", 
+      opacity: 0,
+      transition: { type: "spring", stiffness: 300, damping: 30 } 
+    }
+  };
+
+  // When in mobile view, the sidebar should be fixed position and overlay the content
+  const mobileClass = "fixed top-0 left-0 h-full z-20 shadow-2xl";
+  
+  // For larger screens, use the normal layout
+  const desktopClass = "hidden md:block";
+
   return (
-    <motion.div 
-      initial={{ x: -100, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      className={`w-20 md:w-64 ${sidebarStyle} border-r border-purple-500/20 h-screen overflow-y-auto`}
-    >
-      <div className="p-4">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
-            <span className="text-xl font-bold text-white">S</span>
-          </div>
-          <h1 className="text-xl font-bold hidden md:block">Studygram</h1>
-        </div>
-
-        <nav className="space-y-4 flex-1 mb-8">
-          <NavItem icon={<Home />} text="Home" to="/welcome" active />
-          <NavItem icon={<TrendingUp />} text="Progress" to="/progress" />
-          <NavItem icon={<PenSquare />} text="Posts" to="/posts" />
-          <NavItem icon={<BookOpen />} text="Study Sessions" to="/study-sessions" />
-          <NavItem icon={<MessageSquare />} text="Messages" to="/messages" />
-          <NavItem icon={<User />} text="Profile" to="/profile" />
-          <NavItem icon={<Settings />} text="Settings" to="/settings" />
-        </nav>
-
-        <div className="space-y-4 pt-4 border-t border-purple-500/20">
-          <button
-            onClick={handleThemeChange}
-            className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-purple-500/10 text-gray-400 hover:text-purple-400 transition-colors"
+    <AnimatePresence>
+      {(isOpen || window.innerWidth > 768) && (
+        <>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 z-10 md:hidden"
+              onClick={onClose}
+            />
+          )}
+          
+          <motion.div 
+            className={`${isOpen ? mobileClass : desktopClass} w-64 ${sidebarStyle} border-r border-purple-500/20 overflow-y-auto`}
+            variants={sidebarVariants}
+            initial="closed"
+            animate="open"
+            exit="closed"
           >
-            {theme === "light" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            <span className="hidden md:block">Toggle Theme</span>
-          </button>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-purple-500/10 text-gray-400 hover:text-purple-400 transition-colors"
-          >
-            <LogOut className="w-5 h-5" />
-            <span className="hidden md:block">Logout</span>
-          </button>
-        </div>
-      </div>
-    </motion.div>
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
+                    <span className="text-xl font-bold text-white">S</span>
+                  </div>
+                  <h1 className="text-xl font-bold">Studygram</h1>
+                </div>
+                {isOpen && (
+                  <button 
+                    className="md:hidden text-gray-400 hover:text-purple-400 transition-colors"
+                    onClick={onClose}
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
+
+              <nav className="space-y-4 flex-1 mb-8">
+                <NavItem icon={<Home />} text="Home" to="/welcome" />
+                <NavItem icon={<TrendingUp />} text="Progress" to="/progress" />
+                <NavItem icon={<PenSquare />} text="Posts" to="/posts" />
+                <NavItem icon={<BookOpen />} text="Study Sessions" to="/study-sessions" />
+                <NavItem icon={<MessageSquare />} text="Messages" to="/messages" />
+                <NavItem icon={<User />} text="Profile" to="/profile" />
+                <NavItem icon={<Settings />} text="Settings" to="/settings" />
+              </nav>
+
+              <div className="space-y-4 pt-4 border-t border-purple-500/20">
+                <button
+                  onClick={handleThemeChange}
+                  className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-purple-500/10 text-gray-400 hover:text-purple-400 transition-colors"
+                >
+                  {theme === "light" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                  <span>Toggle Theme</span>
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-purple-500/10 text-gray-400 hover:text-purple-400 transition-colors"
+                >
+                  <LogOut className="w-5 h-5" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
   );
 };
 

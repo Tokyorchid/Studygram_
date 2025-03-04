@@ -14,35 +14,44 @@ import ZenMode from "./pages/ZenMode";
 import Welcome from "./pages/Welcome";
 import SessionPage from "./pages/SessionPage";
 import { Toaster } from "sonner";
-import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import MobileHeader from "./components/navigation/MobileHeader";
+import { useState } from "react";
 import "./App.css";
 
 function App() {
   // Create a client
   const queryClient = new QueryClient();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
 
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
         <div className="app-container">
-          <Sidebar />
-          <main className="main-content">
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/posts" element={<Posts />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/progress" element={<Progress />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/study-sessions" element={<StudySessions />} />
-              <Route path="/session/:sessionId" element={<SessionPage />} />
-              <Route path="/messages" element={<Messages />} />
-              <Route path="/zen-mode" element={<ZenMode />} />
-              <Route path="/welcome" element={<Welcome />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </main>
+          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+          <div className="main-wrapper">
+            <MobileHeader onMenuToggle={toggleSidebar} />
+            <main className="main-content">
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/posts" element={<Posts />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/progress" element={<Progress />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/study-sessions" element={<StudySessions />} />
+                <Route path="/session/:sessionId" element={<SessionPage />} />
+                <Route path="/messages" element={<Messages />} />
+                <Route path="/zen-mode" element={<ZenMode />} />
+                <Route path="/welcome" element={<Welcome />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </main>
+          </div>
         </div>
         <Toaster position="top-center" />
       </Router>

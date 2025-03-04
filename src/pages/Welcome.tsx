@@ -7,7 +7,6 @@ import { useQuery } from "@tanstack/react-query";
 import StatsCard from "@/components/StatsCard";
 import ActivityItem from "@/components/ActivityItem";
 import StudySquadCard from "@/components/StudySquadCard";
-import Sidebar from "@/components/navigation/Sidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import QuoteCard from "@/components/dashboard/QuoteCard";
 import { Button } from "@/components/ui/button";
@@ -47,10 +46,8 @@ const Welcome = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex">
-      <Sidebar />
-
-      <div className="flex-1 p-4 md:p-8 overflow-auto">
+    <div className="min-h-screen bg-black text-white">
+      <div className="p-4 md:p-8 overflow-auto">
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
