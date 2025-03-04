@@ -1,4 +1,3 @@
-
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   BarChart3, BookOpen, Home, MessageSquare, Settings, 
@@ -20,7 +19,6 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Check for current theme on component mount
   useEffect(() => {
     const getInitialTheme = async () => {
       try {
@@ -101,10 +99,8 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     }
   };
 
-  // When in mobile view, the sidebar should be fixed position and overlay the content
   const mobileClass = "fixed top-0 left-0 h-full z-20 shadow-2xl";
   
-  // For larger screens, use the normal layout
   const desktopClass = "hidden md:block";
 
   return (
@@ -136,14 +132,13 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                   </div>
                   <h1 className="text-xl font-bold">Studygram</h1>
                 </div>
-                {isOpen && (
-                  <button 
-                    className="md:hidden text-gray-400 hover:text-purple-400 transition-colors"
-                    onClick={onClose}
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                )}
+                <button 
+                  className="text-gray-400 hover:text-purple-400 transition-colors p-2 rounded-full hover:bg-purple-500/10"
+                  onClick={onClose}
+                  aria-label="Close sidebar"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
 
               <nav className="space-y-4 flex-1 mb-8">

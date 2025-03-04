@@ -25,6 +25,7 @@
   flex: 1;
   overflow: auto;
   width: 100%;
+  padding-bottom: 60px; /* Space for bottom navigation */
 }
 
 /* Mobile header styles */
@@ -39,10 +40,20 @@
   z-index: 10;
 }
 
-.mobile-nav {
+/* Bottom navigation styles */
+.bottom-nav {
   display: flex;
-  justify-content: center;
-  gap: 1rem;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0.5rem;
+  background-color: rgba(17, 17, 17, 0.95);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(128, 90, 213, 0.2);
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
 }
 
 .nav-link {
@@ -52,6 +63,7 @@
   color: #9ca3af;
   font-size: 0.75rem;
   transition: color 0.2s ease;
+  padding: 0.5rem;
 }
 
 .nav-link.active, .nav-link:hover {
@@ -110,4 +122,15 @@
 
 .read-the-docs {
   color: #888;
+}
+
+/* Hide bottom nav on desktop */
+@media (min-width: 768px) {
+  .bottom-nav {
+    display: none;
+  }
+  
+  .main-content {
+    padding-bottom: 0;
+  }
 }

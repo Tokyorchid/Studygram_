@@ -16,6 +16,7 @@ import SessionPage from "./pages/SessionPage";
 import { Toaster } from "sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import MobileHeader from "./components/navigation/MobileHeader";
+import BottomNav from "./components/navigation/BottomNav";
 import { useState } from "react";
 import "./App.css";
 
@@ -51,6 +52,7 @@ function App() {
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </main>
+            <BottomNav />
           </div>
         </div>
         <Toaster position="top-center" />
