@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -117,17 +116,13 @@ const Messages = () => {
 
   const startRecording = () => {
     setIsRecording(true);
-    // In a real app, this would use the Web Audio API
     console.log("Started audio recording");
-    // TODO: Implement actual recording functionality
   };
 
   const stopRecording = () => {
     setIsRecording(false);
-    // In a real app, this would stop recording and send the audio
     console.log("Stopped audio recording");
     
-    // Simulate adding an audio message
     const newAudioMessage: MessageProps = {
       id: Date.now().toString(),
       sender: "You",
@@ -136,7 +131,7 @@ const Messages = () => {
       attachments: [
         {
           type: "audio",
-          url: "/sounds/ambient.mp3", // Using a placeholder sound
+          url: "/sounds/ambient.mp3",
           filename: "voice_message.mp3"
         }
       ]
@@ -186,7 +181,6 @@ const Messages = () => {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      // In a real app, this would upload the file to storage
       console.log("File selected:", files[0].name);
       
       const file = files[0];
@@ -198,10 +192,8 @@ const Messages = () => {
             ? 'audio' 
             : 'document';
       
-      // Create a URL for the file
       const url = URL.createObjectURL(file);
       
-      // Add a new message with the attachment
       const newFileMessage: MessageProps = {
         id: Date.now().toString(),
         sender: "You",
@@ -222,12 +214,10 @@ const Messages = () => {
       });
     }
     
-    // Reset the file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
     
-    // Hide attachment options
     setShowAttachmentOptions(false);
   };
 
@@ -290,7 +280,6 @@ const Messages = () => {
   return (
     <div className="min-h-screen bg-black text-white">
       <div className="h-screen flex flex-col md:flex-row">
-        {/* Sidebar */}
         <motion.div
           initial={{ x: -100, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
@@ -325,9 +314,7 @@ const Messages = () => {
           </div>
         </motion.div>
 
-        {/* Main Chat Area */}
         <div className="flex-1 flex flex-col">
-          {/* Chat Header */}
           <div className="bg-gray-900/50 backdrop-blur-xl border-b border-purple-500/20 p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -359,7 +346,6 @@ const Messages = () => {
             </div>
           </div>
 
-          {/* Call UI */}
           {isInCall && (
             <div className="relative flex-1 bg-gray-900 flex items-center justify-center">
               <div className="text-center">
@@ -390,7 +376,6 @@ const Messages = () => {
             </div>
           )}
 
-          {/* Study Tools */}
           {showStudyTools && !isInCall && (
             <div className="grid md:grid-cols-2 gap-4 p-4 bg-gray-900/30">
               <StudyPomodoroTimer />
@@ -401,7 +386,6 @@ const Messages = () => {
             </div>
           )}
 
-          {/* Messages */}
           {!isInCall && (
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {renderStudyTips()}
@@ -409,6 +393,7 @@ const Messages = () => {
               {messages[activeChat].map((message) => (
                 <Message
                   key={message.id}
+                  id={message.id}
                   sender={message.sender}
                   content={message.content}
                   time={message.time}
@@ -420,7 +405,6 @@ const Messages = () => {
             </div>
           )}
 
-          {/* Input Area */}
           {!isInCall && (
             <div className="bg-gray-900/50 backdrop-blur-xl border-t border-purple-500/20 p-4">
               {showAttachmentOptions && (
