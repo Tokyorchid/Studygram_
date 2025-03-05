@@ -19,6 +19,7 @@ import MobileHeader from "./components/navigation/MobileHeader";
 import BottomNav from "./components/navigation/BottomNav";
 import { useState } from "react";
 import "./App.css";
+import "./styles/gradientText.css"; // Import the gradient text styles
 
 function App() {
   // Create a client
