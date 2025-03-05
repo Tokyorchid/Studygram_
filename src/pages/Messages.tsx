@@ -7,6 +7,7 @@ import {
   Search, Send, Star, Paperclip, Mic, Video, Phone, 
   Image, FileText, X, Check, Clock, Lightbulb
 } from "lucide-react";
+import { toast } from "sonner";
 import MessageAttachment from "@/components/messages/MessageAttachment";
 import CallControls from "@/components/messages/CallControls";
 import CollaborativeNotes from "@/components/messages/CollaborativeNotes";
@@ -96,11 +97,11 @@ const Messages = () => {
   });
   
   const [newMessage, setNewMessage] = useState("");
-  const [isRecording, setIsRecording] = useState(false);
   const [isInCall, setIsInCall] = useState(false);
   const [isVideoCall, setIsVideoCall] = useState(false);
   const [showStudyTools, setShowStudyTools] = useState(false);
   const [showAttachmentOptions, setShowAttachmentOptions] = useState(false);
+  const [isChatVisible, setIsChatVisible] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -146,11 +147,19 @@ const Messages = () => {
   const startCall = (video: boolean) => {
     setIsInCall(true);
     setIsVideoCall(video);
+    setIsChatVisible(false);
+    toast.success(`${video ? "Video" : "Audio"} call started`);
   };
 
   const endCall = () => {
     setIsInCall(false);
     setIsVideoCall(false);
+    setIsChatVisible(true);
+    toast.info("Call ended");
+  };
+
+  const toggleChat = () => {
+    setIsChatVisible(!isChatVisible);
   };
 
   const handleSendMessage = () => {
@@ -323,10 +332,20 @@ const Messages = () => {
               </div>
               {!isInCall ? (
                 <div className="flex gap-2">
-                  <Button variant="outline" size="icon" onClick={() => startCall(false)}>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={() => startCall(false)}
+                    className="hover:bg-purple-900/30 hover:text-purple-400"
+                  >
                     <Phone className="h-4 w-4" />
                   </Button>
-                  <Button variant="outline" size="icon" onClick={() => startCall(true)}>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={() => startCall(true)}
+                    className="hover:bg-purple-900/30 hover:text-purple-400"
+                  >
                     <Video className="h-4 w-4" />
                   </Button>
                   <Button 
@@ -352,14 +371,39 @@ const Messages = () => {
                 {isVideoCall ? (
                   <div className="w-full h-full flex items-center justify-center">
                     <div className="relative w-full max-w-3xl aspect-video bg-gray-800 rounded-lg overflow-hidden">
-                      <div className="absolute bottom-4 right-4 w-32 h-24 bg-gray-700 rounded-lg border-2 border-gray-600 shadow-lg"></div>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ duration: 0.5 }}
+                          className="text-gray-400"
+                        >
+                          {!isVideoCall && "Audio Call"}
+                        </motion.div>
+                      </div>
+                      <div className="absolute bottom-4 right-4 w-32 h-24 bg-gray-700 rounded-lg border-2 border-gray-600 shadow-lg">
+                        <div className="absolute bottom-4 right-4 w-32 h-24 bg-gray-700 rounded-lg border-2 border-gray-600 shadow-lg">
+                          {/* Self video */}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ) : (
                   <div className="p-8">
-                    <div className="w-24 h-24 rounded-full bg-purple-800/50 flex items-center justify-center mx-auto mb-4">
+                    <motion.div 
+                      className="w-24 h-24 rounded-full bg-purple-800/50 flex items-center justify-center mx-auto mb-4"
+                      animate={{ 
+                        scale: [1, 1.05, 1],
+                        opacity: [0.8, 1, 0.8]
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      }}
+                    >
                       <Phone className="h-10 w-10" />
-                    </div>
+                    </motion.div>
                     <h3 className="text-2xl font-semibold mb-2">Group Call</h3>
                     <p className="text-gray-400">Connected to {getChatName(activeChat)}</p>
                   </div>
@@ -369,7 +413,7 @@ const Messages = () => {
               <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
                 <CallControls 
                   onEndCall={endCall} 
-                  onToggleChat={() => {}} 
+                  onToggleChat={toggleChat} 
                   isVideoCall={isVideoCall}
                 />
               </div>
@@ -386,7 +430,7 @@ const Messages = () => {
             </div>
           )}
 
-          {!isInCall && (
+          {(!isInCall || isChatVisible) && (
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {renderStudyTips()}
               
@@ -405,7 +449,7 @@ const Messages = () => {
             </div>
           )}
 
-          {!isInCall && (
+          {(!isInCall || isChatVisible) && (
             <div className="bg-gray-900/50 backdrop-blur-xl border-t border-purple-500/20 p-4">
               {showAttachmentOptions && (
                 <div className="flex gap-2 mb-3">
@@ -520,7 +564,7 @@ const ChatPreview = ({ name, lastMessage, time, active = false, onClick }) => (
   </div>
 );
 
-const Message = ({ sender, content, time, isStarred = false, attachments = [] }: MessageProps) => (
+const Message = ({ id, sender, content, time, isStarred = false, attachments = [] }: MessageProps) => (
   <div className="flex items-start gap-2">
     <div className="flex-1">
       <div className="flex items-center gap-2 mb-1">
