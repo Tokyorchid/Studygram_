@@ -15,18 +15,25 @@ Object.values(audioTracks).forEach(track => {
   track.volume = 0.5;
 });
 
+// Set alarm volume higher to ensure it's heard
+alarmSound.volume = 0.7;
+
 export const playBackgroundMusic = (trackName: string | null) => {
   // First stop any playing track
-  Object.values(audioTracks).forEach(track => {
-    track.pause();
-    track.currentTime = 0;
-  });
+  stopAllBackgroundMusic();
 
   // Play the selected track if it exists and isn't "none"
   if (trackName && trackName !== "none" && audioTracks[trackName as keyof typeof audioTracks]) {
-    audioTracks[trackName as keyof typeof audioTracks].play().catch(error => {
-      console.error("Error playing audio:", error);
-    });
+    const track = audioTracks[trackName as keyof typeof audioTracks];
+    
+    // Handle autoplay restrictions by requiring user interaction
+    const playPromise = track.play();
+    
+    if (playPromise !== undefined) {
+      playPromise.catch(error => {
+        console.error("Error playing audio (might need user interaction first):", error);
+      });
+    }
   }
 };
 
@@ -38,7 +45,40 @@ export const stopAllBackgroundMusic = () => {
 };
 
 export const playAlarm = () => {
-  alarmSound.play().catch(error => {
-    console.error("Error playing alarm:", error);
+  // First ensure background music volume is lowered
+  Object.values(audioTracks).forEach(track => {
+    track.volume = 0.2;
   });
+  
+  // Play the alarm sound
+  const playPromise = alarmSound.play();
+  
+  if (playPromise !== undefined) {
+    playPromise
+      .then(() => {
+        // After alarm finishes, restore background music volume
+        alarmSound.onended = () => {
+          Object.values(audioTracks).forEach(track => {
+            track.volume = 0.5;
+          });
+        };
+      })
+      .catch(error => {
+        console.error("Error playing alarm (might need user interaction first):", error);
+      });
+  }
+};
+
+// Check if audio is available and can be played
+export const checkAudioAvailability = () => {
+  const audio = new Audio();
+  return audio.canPlayType && audio.canPlayType('audio/mpeg') !== '';
+};
+
+// Preload audio files to ensure they're ready to play
+export const preloadAudioFiles = () => {
+  Object.values(audioTracks).forEach(track => {
+    track.load();
+  });
+  alarmSound.load();
 };

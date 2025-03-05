@@ -3,9 +3,10 @@ import { useEffect, useState, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Timer, Volume2, VolumeX } from "lucide-react";
+import { Timer, Volume2, VolumeX, Heart, Moon, Sun, Sparkles } from "lucide-react";
 import { Json } from "@/integrations/supabase/types";
 import { playBackgroundMusic, stopAllBackgroundMusic, playAlarm } from "@/utils/audioUtils";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ZenPreferences {
   theme: string;
@@ -22,6 +23,7 @@ const ZenMode = () => {
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [isActive, setIsActive] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [showMessage, setShowMessage] = useState(true);
   const { toast } = useToast();
 
   // Fetch user preferences on component mount
@@ -68,6 +70,16 @@ const ZenMode = () => {
     return () => clearInterval(interval);
   }, [isActive, timeLeft, toast]);
 
+  // Hide motivational message after 5 seconds
+  useEffect(() => {
+    if (showMessage) {
+      const timer = setTimeout(() => {
+        setShowMessage(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showMessage]);
+
   const getPreferences = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -99,6 +111,11 @@ const ZenMode = () => {
       setTimeLeft(preferences.timer * 60);
     }
     setIsActive(!isActive);
+    
+    // Show encouraging message when starting timer
+    if (!isActive) {
+      setShowMessage(true);
+    }
   };
   
   const toggleMute = () => {
@@ -120,10 +137,32 @@ const ZenMode = () => {
     }
   };
 
+  const resetTimer = () => {
+    setIsActive(false);
+    setTimeLeft(preferences.timer * 60);
+    toast({
+      title: "timer reset ⏱️",
+      description: "ready for a fresh start!",
+    });
+  };
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Get random motivational message
+  const getMotivationalMessage = () => {
+    const messages = [
+      "you've got this! one step at a time ✨",
+      "progress over perfection, always 💖",
+      "breathe, focus, achieve 🌟",
+      "every minute counts, make it shine! ✨",
+      "your future self is proud of you already 💫",
+      "even in the longest winter, your dreams won't freeze ❄️",
+    ];
+    return messages[Math.floor(Math.random() * messages.length)];
   };
 
   const bgClass = preferences.theme === "dark" 
@@ -131,20 +170,59 @@ const ZenMode = () => {
     : "bg-gradient-to-br from-purple-100 via-white to-purple-100";
 
   const textClass = preferences.theme === "dark" ? "text-white" : "text-gray-900";
+  const cardClass = preferences.theme === "dark" 
+    ? "bg-white/5 backdrop-blur-xl border border-purple-500/20" 
+    : "bg-white/70 backdrop-blur-xl border border-purple-200";
 
   return (
-    <div className={`min-h-screen ${bgClass} flex items-center justify-center p-4`}>
-      <div className="text-center space-y-8">
-        <div className={`text-8xl font-bold font-mono ${textClass}`}>
-          {formatTime(timeLeft)}
+    <div className={`min-h-screen ${bgClass} flex items-center justify-center p-4 transition-colors duration-300`}>
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        className={`${cardClass} rounded-xl shadow-xl p-8 max-w-md w-full text-center space-y-8`}
+      >
+        <div className="flex justify-end">
+          {preferences.theme === "dark" ? (
+            <Moon className={`w-6 h-6 ${textClass} opacity-50`} />
+          ) : (
+            <Sun className={`w-6 h-6 ${textClass} opacity-50`} />
+          )}
+        </div>
+        
+        <AnimatePresence>
+          {showMessage && (
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className={`${preferences.theme === "dark" ? "bg-white/10" : "bg-purple-100/70"} px-4 py-3 rounded-lg`}
+            >
+              <p className={`${textClass} text-sm`}>{getMotivationalMessage()}</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div className={`text-8xl font-bold font-mono ${textClass} transition-colors duration-300 flex justify-center`}>
+          <motion.span
+            key={timeLeft}
+            initial={{ opacity: 0.5, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            {formatTime(timeLeft)}
+          </motion.span>
         </div>
 
         <div className="flex justify-center gap-4">
           <Button
             onClick={toggleTimer}
-            className="px-8 py-6 bg-purple-500 hover:bg-purple-600 transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+            className={`px-8 py-6 ${isActive 
+              ? "bg-pink-500 hover:bg-pink-600" 
+              : "bg-purple-500 hover:bg-purple-600"} 
+              transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200`}
           >
-            {isActive ? "pause bestie" : timeLeft === 0 ? "start slaying" : "continue slaying"}
+            {isActive ? "take a breath" : timeLeft === 0 ? "start slaying" : "continue slaying"}
           </Button>
 
           <Button
@@ -154,14 +232,31 @@ const ZenMode = () => {
           >
             {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
           </Button>
+          
+          {timeLeft > 0 && !isActive && (
+            <Button
+              onClick={resetTimer}
+              variant="outline"
+              className="px-4 py-6 border-purple-500/20 hover:bg-purple-500/10"
+            >
+              <Timer className="w-6 h-6" />
+            </Button>
+          )}
         </div>
 
-        <div className={`text-sm ${textClass} opacity-60`}>
-          {isActive 
-            ? "you're doing amazing sweetie! keep that focus going!" 
-            : "ready to slay your study session? let's get this bread! 🍞"}
+        <div className={`flex items-center justify-center gap-2 ${textClass} opacity-60`}>
+          <Heart className="w-4 h-4 text-pink-400" />
+          <p className="text-sm">
+            {isActive 
+              ? "each moment of focus brings you closer to your dreams" 
+              : "ready to create some magic today? let's go! ✨"}
+          </p>
         </div>
-      </div>
+        
+        <div className="text-xs opacity-40 italic">
+          <p className={textClass}>"even in the longest winter, your dreams won't freeze"</p>
+        </div>
+      </motion.div>
     </div>
   );
 };
