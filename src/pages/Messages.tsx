@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -103,6 +104,7 @@ const Messages = () => {
   const [showAttachmentOptions, setShowAttachmentOptions] = useState(false);
   const [isChatVisible, setIsChatVisible] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isRecording, setIsRecording] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
