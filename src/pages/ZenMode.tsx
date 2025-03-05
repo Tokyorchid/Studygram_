@@ -1,10 +1,11 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Timer, Volume2, VolumeX } from "lucide-react";
 import { Json } from "@/integrations/supabase/types";
+import { playBackgroundMusic, stopAllBackgroundMusic, playAlarm } from "@/utils/audioUtils";
 
 interface ZenPreferences {
   theme: string;
@@ -23,10 +24,31 @@ const ZenMode = () => {
   const [isMuted, setIsMuted] = useState(false);
   const { toast } = useToast();
 
+  // Fetch user preferences on component mount
   useEffect(() => {
     getPreferences();
   }, []);
+  
+  // Apply theme based on preferences
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', preferences.theme === 'dark');
+    document.documentElement.classList.toggle('light', preferences.theme === 'light');
+  }, [preferences.theme]);
 
+  // Handle background music changes
+  useEffect(() => {
+    if (!isMuted) {
+      playBackgroundMusic(preferences.music);
+    } else {
+      stopAllBackgroundMusic();
+    }
+
+    return () => {
+      stopAllBackgroundMusic();
+    };
+  }, [preferences.music, isMuted]);
+
+  // Timer logic
   useEffect(() => {
     let interval: NodeJS.Timeout;
     
@@ -36,6 +58,7 @@ const ZenMode = () => {
       }, 1000);
     } else if (timeLeft === 0 && isActive) {
       setIsActive(false);
+      playAlarm();
       toast({
         title: "time's up bestie! ⏰",
         description: "you ate that focus session fr fr!",
@@ -77,6 +100,25 @@ const ZenMode = () => {
     }
     setIsActive(!isActive);
   };
+  
+  const toggleMute = () => {
+    const newMutedState = !isMuted;
+    setIsMuted(newMutedState);
+    
+    if (newMutedState) {
+      stopAllBackgroundMusic();
+      toast({
+        title: "sounds muted bestie 🤫",
+        description: "it's giving library vibes now",
+      });
+    } else {
+      playBackgroundMusic(preferences.music);
+      toast({
+        title: "sounds back on! 🎵",
+        description: "the vibes have been restored",
+      });
+    }
+  };
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -106,7 +148,7 @@ const ZenMode = () => {
           </Button>
 
           <Button
-            onClick={() => setIsMuted(!isMuted)}
+            onClick={toggleMute}
             variant="outline"
             className="px-4 py-6 border-purple-500/20 hover:bg-purple-500/10"
           >

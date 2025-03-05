@@ -23,6 +23,12 @@ const Settings = () => {
   });
   const { toast } = useToast();
 
+  // Apply theme immediately when changed in settings for preview
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', preferences.theme === 'dark');
+    document.documentElement.classList.toggle('light', preferences.theme === 'light');
+  }, [preferences.theme]);
+
   useEffect(() => {
     getPreferences();
   }, []);
@@ -79,10 +85,16 @@ const Settings = () => {
     }
   };
 
+  const bgClass = preferences.theme === "dark" ? "bg-black/90" : "bg-gray-100";
+  const cardBgClass = preferences.theme === "dark" ? "bg-white/5" : "bg-white";
+  const textClass = preferences.theme === "dark" ? "text-white" : "text-gray-800";
+  const labelClass = preferences.theme === "dark" ? "text-purple-300" : "text-purple-600";
+  const descClass = preferences.theme === "dark" ? "text-gray-400" : "text-gray-500";
+
   return (
-    <div className="min-h-screen bg-black/90 p-4 md:p-8">
+    <div className={`min-h-screen ${bgClass} p-4 md:p-8 transition-colors duration-300`}>
       <div className="max-w-2xl mx-auto">
-        <div className="bg-white/5 backdrop-blur-xl p-8 rounded-xl border border-purple-500/20 shadow-lg">
+        <div className={`${cardBgClass} backdrop-blur-xl p-8 rounded-xl border border-purple-500/20 shadow-lg transition-colors duration-300`}>
           <h1 className="text-3xl font-bold mb-8 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
             customize your vibe ✨
           </h1>
@@ -96,7 +108,7 @@ const Settings = () => {
                   ) : (
                     <Sun className="w-5 h-5 text-purple-400" />
                   )}
-                  <h3 className="text-lg font-medium text-white">zen mode theme</h3>
+                  <h3 className={`text-lg font-medium ${textClass}`}>zen mode theme</h3>
                 </div>
                 <Switch
                   checked={preferences.theme === "dark"}
@@ -105,7 +117,7 @@ const Settings = () => {
                   }
                 />
               </div>
-              <p className="text-sm text-gray-400">
+              <p className={`text-sm ${descClass}`}>
                 bestie, pick your aesthetic for maximum focus vibes
               </p>
             </div>
@@ -113,13 +125,13 @@ const Settings = () => {
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Volume2 className="w-5 h-5 text-purple-400" />
-                <h3 className="text-lg font-medium text-white">background music</h3>
+                <h3 className={`text-lg font-medium ${textClass}`}>background music</h3>
               </div>
               <Select
                 value={preferences.music}
                 onValueChange={(value) => setPreferences({ ...preferences, music: value })}
               >
-                <SelectTrigger className="w-full bg-white/5 border-purple-500/20">
+                <SelectTrigger className={`w-full ${preferences.theme === "dark" ? "bg-white/5 border-purple-500/20" : "bg-white border-purple-200"}`}>
                   <SelectValue placeholder="pick your vibe" />
                 </SelectTrigger>
                 <SelectContent>
@@ -134,7 +146,7 @@ const Settings = () => {
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Timer className="w-5 h-5 text-purple-400" />
-                <h3 className="text-lg font-medium text-white">focus timer</h3>
+                <h3 className={`text-lg font-medium ${textClass}`}>focus timer</h3>
               </div>
               <div className="flex items-center gap-4">
                 <Slider
@@ -145,9 +157,9 @@ const Settings = () => {
                   step={5}
                   className="flex-1"
                 />
-                <span className="text-white min-w-[4rem]">{preferences.timer} mins</span>
+                <span className={`${textClass} min-w-[4rem]`}>{preferences.timer} mins</span>
               </div>
-              <p className="text-sm text-gray-400">
+              <p className={`text-sm ${descClass}`}>
                 slay your study sesh with the perfect timer
               </p>
             </div>
