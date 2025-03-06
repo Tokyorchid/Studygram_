@@ -1,14 +1,14 @@
-
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Clock, Target, Users, Play, Pause, X, MessageSquare, CheckCircle } from "lucide-react";
+import { Clock, Target, Users, Play, Pause, X, MessageSquare, CheckCircle, Video, Phone } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { Json } from "@/integrations/supabase/types";
+import CallView from "@/components/messages/CallView";
 
 // Define types for our metadata structures
 interface TaskItem {
@@ -38,6 +38,9 @@ const SessionPage = () => {
   const [progress, setProgress] = useState(0);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [sessionEnded, setSessionEnded] = useState(false);
+  const [isInCall, setIsInCall] = useState(false);
+  const [isVideoCall, setIsVideoCall] = useState(false);
+  const [showChat, setShowChat] = useState(true);
 
   // Fetch session details
   const { data: session, isLoading: isSessionLoading } = useQuery({
@@ -164,6 +167,34 @@ const SessionPage = () => {
     handleUpdateProgress(Math.round((completedCount / newTasks.length) * 100));
   };
 
+  const startCall = (video: boolean) => {
+    setIsInCall(true);
+    setIsVideoCall(video);
+    setShowChat(false);
+    toast({
+      title: video ? "Video call started" : "Audio call started",
+      description: "You are now connected with other study pod members",
+    });
+  };
+
+  const endCall = () => {
+    setIsInCall(false);
+    setIsVideoCall(false);
+    setShowChat(true);
+    toast({
+      title: "Call ended",
+      description: "Call has been disconnected",
+    });
+  };
+
+  const toggleChat = () => {
+    setShowChat(!showChat);
+  };
+
+  const getChatName = (chatId: string) => {
+    return session?.title || "Study Pod";
+  };
+
   if (isSessionLoading) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
@@ -189,7 +220,20 @@ const SessionPage = () => {
     );
   }
 
-  // Render different session layouts based on session type
+  if (isInCall) {
+    return (
+      <div className="min-h-screen bg-black text-white">
+        <CallView 
+          isVideoCall={isVideoCall} 
+          activeChat={sessionId || ""}
+          getChatName={getChatName}
+          endCall={endCall}
+          toggleChat={toggleChat}
+        />
+      </div>
+    );
+  }
+
   const renderSessionContent = () => {
     switch (session.session_type) {
       case 'instant_pod':
@@ -202,7 +246,7 @@ const SessionPage = () => {
                 <p className="text-gray-400 mt-2">Study duration</p>
               </div>
               
-              <div className="flex gap-4 justify-center mt-8">
+              <div className="flex flex-wrap gap-4 justify-center mt-8">
                 <Button 
                   onClick={handleTogglePause} 
                   className={isPaused ? "bg-green-500" : "bg-yellow-500"}
@@ -210,6 +254,23 @@ const SessionPage = () => {
                   {isPaused ? <Play className="mr-2 h-4 w-4" /> : <Pause className="mr-2 h-4 w-4" />}
                   {isPaused ? "Resume" : "Pause"}
                 </Button>
+                
+                <Button 
+                  onClick={() => startCall(false)}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  <Phone className="mr-2 h-4 w-4" />
+                  Audio Call
+                </Button>
+                
+                <Button 
+                  onClick={() => startCall(true)}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <Video className="mr-2 h-4 w-4" />
+                  Video Call
+                </Button>
+                
                 <Button 
                   onClick={handleEndSession}
                   variant="destructive"
@@ -319,7 +380,7 @@ const SessionPage = () => {
                 </div>
               </div>
               
-              <div className="flex gap-4 justify-center mt-8">
+              <div className="flex flex-wrap gap-4 justify-center mt-8">
                 <Button 
                   onClick={handleTogglePause} 
                   className={isPaused ? "bg-green-500" : "bg-yellow-500"}
@@ -445,7 +506,7 @@ const SessionPage = () => {
                 </div>
               </div>
               
-              <div className="flex gap-4 justify-center mt-8">
+              <div className="flex flex-wrap gap-4 justify-center mt-8">
                 <Button 
                   onClick={handleTogglePause} 
                   className={isPaused ? "bg-green-500" : "bg-yellow-500"}
@@ -467,7 +528,6 @@ const SessionPage = () => {
         );
         
       case 'help_session':
-        // Type cast metadata to our interface
         const helpMetadata = session.metadata as SessionMetadata;
         return (
           <div className="space-y-8">
@@ -524,7 +584,7 @@ const SessionPage = () => {
                 </div>
               </div>
               
-              <div className="flex gap-4 justify-center mt-8">
+              <div className="flex flex-wrap gap-4 justify-center mt-8">
                 <Button 
                   onClick={handleEndSession}
                   variant="default"
@@ -548,7 +608,6 @@ const SessionPage = () => {
         );
         
       case 'vibe_based':
-        // Type cast vibe_settings to our interface
         const vibeSettings = session.vibe_settings as VibeSettings;
         const vibeTheme = vibeSettings?.theme || 'deep_focus';
         const vibeColors = {
@@ -622,7 +681,7 @@ const SessionPage = () => {
                 </div>
               </div>
               
-              <div className="flex gap-4 justify-center mt-8">
+              <div className="flex flex-wrap gap-4 justify-center mt-8">
                 <Button 
                   onClick={handleTogglePause} 
                   className={`bg-black/40 hover:bg-black/60 ${isPaused ? "text-green-400" : "text-yellow-400"}`}
@@ -659,30 +718,5 @@ const SessionPage = () => {
         animate={{ opacity: 1, y: 0 }}
         className="max-w-6xl mx-auto space-y-6"
       >
-        {/* Header with session info */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gray-900/50 backdrop-blur-xl rounded-xl p-6 border border-purple-500/20">
-          <div>
-            <h1 className="text-2xl font-bold">{session.title}</h1>
-            <p className="text-gray-400">{session.subject}</p>
-            <div className="flex items-center gap-2 text-gray-400 mt-2">
-              <Clock className="w-4 h-4" />
-              <span>{format(new Date(session.start_time), 'PPp')} - {format(new Date(session.end_time), 'p')}</span>
-            </div>
-          </div>
-          
-          <Button 
-            className="bg-purple-500 hover:bg-purple-600"
-            onClick={() => navigate("/study-sessions")}
-          >
-            Back to Sessions
-          </Button>
-        </div>
-        
-        {/* Session content */}
-        {renderSessionContent()}
-      </motion.div>
-    </div>
-  );
-};
+        <
 
-export default SessionPage;
