@@ -2,7 +2,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Phone } from "lucide-react";
-import CallControls from "./call-controls/CallControls";
+import CallControls from "./CallControls";
 
 interface CallViewProps {
   isVideoCall: boolean;
