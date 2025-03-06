@@ -1,12 +1,12 @@
 
 import React, { useState, useEffect } from "react";
-import { Video, Mic, MessageSquare, Phone, Settings } from "lucide-react";
+import { Video, VideoOff, Mic, MicOff, MessageSquare, Phone, Settings } from "lucide-react";
 import CallControlButton from "./CallControlButton";
 import AudioVisualizer from "./AudioVisualizer";
 import EnhancedModeSettings from "./EnhancedModeSettings";
 import { CallControlsProps } from "./types";
 
-const CallControls = ({ onEndCall, onToggleChat, isVideoCall = false }: CallControlsProps) => {
+const CallControls = ({ onEndCall, onToggleChat, isVideoCall = false, onToggleVideo, onToggleMute }: CallControlsProps) => {
   // State management for controls
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOn, setIsVideoOn] = useState(isVideoCall);
@@ -26,8 +26,20 @@ const CallControls = ({ onEndCall, onToggleChat, isVideoCall = false }: CallCont
     }
   }, [isMuted]);
 
-  const toggleMute = () => setIsMuted(!isMuted);
-  const toggleVideo = () => setIsVideoOn(!isVideoOn);
+  const toggleMute = () => {
+    setIsMuted(!isMuted);
+    if (onToggleMute) {
+      onToggleMute(!isMuted);
+    }
+  };
+  
+  const toggleVideo = () => {
+    setIsVideoOn(!isVideoOn);
+    if (onToggleVideo) {
+      onToggleVideo(!isVideoOn);
+    }
+  };
+  
   const toggleEnhancedMode = () => setIsEnhancedMode(!isEnhancedMode);
   const toggleSettings = () => setShowSettings(!showSettings);
 
@@ -40,7 +52,7 @@ const CallControls = ({ onEndCall, onToggleChat, isVideoCall = false }: CallCont
           onClick={toggleMute}
           active={isMuted}
           icon={<Mic className="h-5 w-5" />}
-          activeIcon={<Mic className="h-5 w-5 text-red-500" />}
+          activeIcon={<MicOff className="h-5 w-5 text-red-500" />}
           activeClass="bg-gray-800 border-red-500/30"
         />
         
@@ -49,7 +61,7 @@ const CallControls = ({ onEndCall, onToggleChat, isVideoCall = false }: CallCont
             onClick={toggleVideo}
             active={!isVideoOn}
             icon={<Video className="h-5 w-5" />}
-            activeIcon={<Video className="h-5 w-5 text-red-500" />}
+            activeIcon={<VideoOff className="h-5 w-5 text-red-500" />}
             activeClass="bg-gray-800 border-red-500/30"
           />
         )}

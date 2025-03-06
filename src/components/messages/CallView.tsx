@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Phone, Users, Sparkles, Video, Mic } from "lucide-react";
+import { Phone, Users, Sparkles, Video, VideoOff, Mic, MicOff } from "lucide-react";
 import CallControls from "./call-controls/CallControls";
 import StudyTips from "./StudyTips";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +23,8 @@ const CallView = ({
 }: CallViewProps) => {
   const [participants, setParticipants] = useState<string[]>([]);
   const [showTip, setShowTip] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isVideoOff, setIsVideoOff] = useState(false);
 
   // Simulate getting participants
   useEffect(() => {
@@ -37,6 +39,16 @@ const CallView = ({
 
     return () => clearTimeout(timer);
   }, [activeChat]);
+
+  const handleToggleVideo = (videoOff: boolean) => {
+    setIsVideoOff(videoOff);
+    console.log("Video toggled:", videoOff ? "off" : "on");
+  };
+
+  const handleToggleMute = (muted: boolean) => {
+    setIsMuted(muted);
+    console.log("Microphone toggled:", muted ? "muted" : "unmuted");
+  };
 
   return (
     <div className="relative flex-1 bg-gradient-to-b from-gray-900 to-black flex flex-col">
@@ -61,12 +73,18 @@ const CallView = ({
                   className="relative aspect-video bg-gray-800/80 rounded-lg overflow-hidden backdrop-blur-sm border border-purple-500/10 flex items-center justify-center"
                 >
                   <div className="absolute top-2 left-2 px-2 py-1 bg-black/50 backdrop-blur-sm rounded text-xs text-white flex items-center">
-                    <Mic className="h-3 w-3 mr-1" />
+                    {isMuted ? <MicOff className="h-3 w-3 mr-1 text-red-400" /> : <Mic className="h-3 w-3 mr-1" />}
                     {participant}
                   </div>
                   
                   {/* Placeholder for video */}
-                  <Video className="h-10 w-10 text-gray-500" />
+                  {isVideoOff && index === 0 ? (
+                    <VideoOff className="h-10 w-10 text-gray-500" />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-purple-900/30 to-blue-900/30 flex items-center justify-center">
+                      <Video className="h-10 w-10 text-gray-500" />
+                    </div>
+                  )}
                 </motion.div>
               ))}
             </div>
@@ -74,7 +92,13 @@ const CallView = ({
             {/* Self video */}
             <div className="absolute bottom-20 right-4 w-32 h-24 bg-gray-700 rounded-lg border-2 border-gray-600 shadow-lg flex items-center justify-center">
               <div className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full"></div>
-              <Video className="h-6 w-6 text-gray-400" />
+              {isVideoOff ? (
+                <VideoOff className="h-6 w-6 text-gray-400" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-green-900/30 to-blue-900/30 flex items-center justify-center">
+                  <Video className="h-6 w-6 text-gray-400" />
+                </div>
+              )}
             </div>
           </div>
         ) : (
@@ -118,6 +142,8 @@ const CallView = ({
           onEndCall={endCall} 
           onToggleChat={toggleChat} 
           isVideoCall={isVideoCall}
+          onToggleVideo={handleToggleVideo}
+          onToggleMute={handleToggleMute}
         />
       </div>
     </div>

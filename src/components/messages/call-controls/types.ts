@@ -13,4 +13,6 @@ export interface CallControlsProps {
   onEndCall: () => void;
   onToggleChat: () => void;
   isVideoCall?: boolean;
+  onToggleVideo?: (videoOff: boolean) => void;
+  onToggleMute?: (muted: boolean) => void;
 }

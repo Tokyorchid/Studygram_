@@ -15,6 +15,11 @@ const StudyTips = () => {
     "Keep your camera on to stay accountable - it's harder to get distracted when others can see you!",
     "Use hand signals for 'I need to speak' or 'I understand' to avoid talking over each other.",
     "Schedule quick 2-minute stretch breaks every 30 minutes to keep everyone fresh and focused.",
+    "Test your mic and camera before joining a study call to make sure everything's working properly.",
+    "Remember to mute yourself when you're not speaking to minimize background noise for everyone.",
+    "For collective study, use the whiteboard feature to brainstorm ideas together visually.",
+    "Toggle your video on and off as needed - sometimes seeing each other helps with collaboration!",
+    "Have a backup plan for sharing files in case screen sharing doesn't work (use the chat)."
   ];
   
   const randomTip = videoCallTips[Math.floor(Math.random() * videoCallTips.length)];
