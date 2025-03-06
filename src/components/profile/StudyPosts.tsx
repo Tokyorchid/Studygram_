@@ -70,7 +70,7 @@ export const StudyPosts = ({ posts, onPostsUpdate }: StudyPostsProps) => {
       });
     } catch (error: any) {
       toast({
-        title: "Post failed bestie 😭",
+        title: "Post failed 😭",
         description: error.message,
         variant: "destructive",
       });

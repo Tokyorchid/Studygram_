@@ -63,11 +63,11 @@ export const ProfileInfo = ({
       
       toast({
         title: "Avatar updated! ✨",
-        description: "Looking fresh bestie!",
+        description: "Your profile picture looks great!",
       });
     } catch (error: any) {
       toast({
-        title: "Upload failed bestie 😭",
+        title: "Upload failed 😭",
         description: error.message,
         variant: "destructive",
       });
@@ -105,7 +105,7 @@ export const ProfileInfo = ({
       });
     } catch (error: any) {
       toast({
-        title: "Update failed bestie 😭",
+        title: "Update failed 😭",
         description: error.message,
         variant: "destructive",
       });
@@ -160,7 +160,7 @@ export const ProfileInfo = ({
               <Textarea
                 value={profile.bio || ""}
                 onChange={(e) => onProfileChange({ bio: e.target.value })}
-                placeholder="Tell us about yourself bestie..."
+                placeholder="Tell us about yourself..."
                 className="bg-white/5 border-none text-white resize-none"
                 rows={3}
               />
@@ -174,9 +174,9 @@ export const ProfileInfo = ({
           ) : (
             <>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                {profile.full_name || "Main Character"}
+                {profile.full_name || "Profile Owner"}
               </h1>
-              <p className="text-gray-400">@{profile.username || "bestie"}</p>
+              <p className="text-gray-400">@{profile.username || "user"}</p>
               {profile.bio && (
                 <p className="text-white/80 mt-2">{profile.bio}</p>
               )}

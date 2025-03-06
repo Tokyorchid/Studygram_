@@ -24,8 +24,8 @@ const Login = () => {
         });
         if (error) throw error;
         toast({
-          title: "Bestie, you're in! ✨",
-          description: "Check your inbox rn, we sent you something!",
+          title: "Registration successful! ✨",
+          description: "Check your inbox for the confirmation email.",
         });
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -35,13 +35,13 @@ const Login = () => {
         if (error) throw error;
         navigate("/welcome");
         toast({
-          title: "The main character is back! ✨",
-          description: "Missed you bestie, let's get this bread!",
+          title: "Welcome back! ✨",
+          description: "Great to see you again, let's get started!",
         });
       }
     } catch (error: any) {
       toast({
-        title: "Oof, bestie! 😬",
+        title: "Oops! Something went wrong 😬",
         description: error.message,
         variant: "destructive",
       });
@@ -59,24 +59,24 @@ const Login = () => {
         <div className="backdrop-blur-sm bg-black/50 border border-purple-500/20 shadow-xl rounded-xl p-8">
           <div className="text-center mb-8 space-y-3">
             <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
-              {isSignUp ? "Join the Vibe ✨" : "Welcome Back Bestie!"}
+              {isSignUp ? "Join the Community ✨" : "Welcome Back!"}
             </h1>
             <p className="text-gray-400">
               {isSignUp
-                ? "Time to level up your study game fr fr"
-                : "The grind doesn't stop, let's get it! 💫"}
+                ? "Time to level up your study journey"
+                : "Let's continue your learning adventure! 💫"}
             </p>
             <p className="text-sm text-purple-400/80">
               {isSignUp
-                ? "no cap, you're about to be the main character of your study journey"
-                : "back like you never left, bestie - let's make it iconic"}
+                ? "You're about to become the main character of your study journey"
+                : "Back to making progress on your academic goals"}
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
               type="email"
-              placeholder="drop your email bestie"
+              placeholder="Your email address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -84,7 +84,7 @@ const Login = () => {
             />
             <Input
               type="password"
-              placeholder="super secret password"
+              placeholder="Your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -95,7 +95,7 @@ const Login = () => {
               className="w-full bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 hover:opacity-90 transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
             >
               <Sparkles className="mr-2 h-4 w-4" />
-              {isSignUp ? "Let's Get This Bread" : "Slay The Day"}
+              {isSignUp ? "Start Your Journey" : "Continue Learning"}
             </Button>
           </form>
 
@@ -105,8 +105,8 @@ const Login = () => {
               className="text-sm text-purple-400 hover:text-purple-300 hover:underline transition-colors"
             >
               {isSignUp
-                ? "Already in the squad? Sign in"
-                : "First time? Join the vibe"}
+                ? "Already have an account? Sign in"
+                : "New here? Create an account"}
             </button>
           </div>
         </div>
@@ -115,17 +115,17 @@ const Login = () => {
           <div className="backdrop-blur-sm bg-white/5 p-6 rounded-xl border border-purple-500/20 text-center transform hover:scale-[1.02] transition-all duration-200">
             <BookOpen className="w-8 h-8 mx-auto mb-4 text-purple-400" />
             <h3 className="font-semibold mb-2 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Study Your Way</h3>
-            <p className="text-sm text-gray-400">fr fr, your journey, your rules</p>
+            <p className="text-sm text-gray-400">Your journey, your learning style</p>
           </div>
           <div className="backdrop-blur-sm bg-white/5 p-6 rounded-xl border border-purple-500/20 text-center transform hover:scale-[1.02] transition-all duration-200">
             <Users className="w-8 h-8 mx-auto mb-4 text-purple-400" />
-            <h3 className="font-semibold mb-2 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Squad Goals</h3>
-            <p className="text-sm text-gray-400">link up with the study besties</p>
+            <h3 className="font-semibold mb-2 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Community Goals</h3>
+            <p className="text-sm text-gray-400">Connect with motivated study partners</p>
           </div>
           <div className="backdrop-blur-sm bg-white/5 p-6 rounded-xl border border-purple-500/20 text-center transform hover:scale-[1.02] transition-all duration-200">
             <Trophy className="w-8 h-8 mx-auto mb-4 text-purple-400" />
             <h3 className="font-semibold mb-2 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Level Up</h3>
-            <p className="text-sm text-gray-400">watch your grades go brr</p>
+            <p className="text-sm text-gray-400">Watch your academic progress grow</p>
           </div>
         </div>
       </div>
@@ -134,4 +134,3 @@ const Login = () => {
 };
 
 export default Login;
-
