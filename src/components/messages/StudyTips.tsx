@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Lightbulb, Sparkles, Fire, Zap } from "lucide-react";
+import { Lightbulb, Sparkles, Flame, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 
 const StudyTips = () => {
@@ -22,7 +22,7 @@ const StudyTips = () => {
   const icons = [
     <Lightbulb className="text-yellow-400 w-5 h-5 mr-2 shrink-0 mt-0.5" />,
     <Sparkles className="text-blue-400 w-5 h-5 mr-2 shrink-0 mt-0.5" />,
-    <Fire className="text-orange-400 w-5 h-5 mr-2 shrink-0 mt-0.5" />,
+    <Flame className="text-orange-400 w-5 h-5 mr-2 shrink-0 mt-0.5" />,
     <Zap className="text-pink-400 w-5 h-5 mr-2 shrink-0 mt-0.5" />
   ];
   
