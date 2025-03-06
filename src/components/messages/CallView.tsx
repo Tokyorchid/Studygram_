@@ -1,8 +1,10 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Phone, Users, Sparkles } from "lucide-react";
-import CallControls from "./CallControls";
+import { Phone, Users, Sparkles, Video, Mic } from "lucide-react";
+import CallControls from "./call-controls/CallControls";
+import StudyTips from "./StudyTips";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CallViewProps {
   isVideoCall: boolean;
@@ -19,27 +21,60 @@ const CallView = ({
   endCall,
   toggleChat
 }: CallViewProps) => {
+  const [participants, setParticipants] = useState<string[]>([]);
+  const [showTip, setShowTip] = useState(true);
+
+  // Simulate getting participants
+  useEffect(() => {
+    // This would be replaced with actual data fetching
+    const fakeParticipants = ["User 1", "User 2", "User 3"];
+    setParticipants(fakeParticipants);
+
+    // Hide study tip after 10 seconds
+    const timer = setTimeout(() => {
+      setShowTip(false);
+    }, 10000);
+
+    return () => clearTimeout(timer);
+  }, [activeChat]);
+
   return (
-    <div className="relative flex-1 bg-gradient-to-b from-gray-900 to-black flex items-center justify-center">
-      <div className="text-center">
+    <div className="relative flex-1 bg-gradient-to-b from-gray-900 to-black flex flex-col">
+      {/* Study tip that appears at the start of call */}
+      {showTip && (
+        <div className="absolute top-4 left-0 right-0 z-10 px-4">
+          <StudyTips />
+        </div>
+      )}
+
+      <div className="flex-1 flex items-center justify-center p-4">
         {isVideoCall ? (
-          <div className="w-full h-full flex items-center justify-center">
-            <div className="relative w-full max-w-3xl aspect-video bg-gray-800/80 rounded-lg overflow-hidden backdrop-blur-sm border border-purple-500/10">
-              <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-full h-full flex flex-col">
+            {/* Main video area */}
+            <div className="relative w-full flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto p-2">
+              {participants.map((participant, index) => (
                 <motion.div
+                  key={index}
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.5 }}
-                  className="text-gray-400"
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  className="relative aspect-video bg-gray-800/80 rounded-lg overflow-hidden backdrop-blur-sm border border-purple-500/10 flex items-center justify-center"
                 >
-                  {!isVideoCall && "Audio Call"}
+                  <div className="absolute top-2 left-2 px-2 py-1 bg-black/50 backdrop-blur-sm rounded text-xs text-white flex items-center">
+                    <Mic className="h-3 w-3 mr-1" />
+                    {participant}
+                  </div>
+                  
+                  {/* Placeholder for video */}
+                  <Video className="h-10 w-10 text-gray-500" />
                 </motion.div>
-              </div>
-              <div className="absolute bottom-4 right-4 w-32 h-24 bg-gray-700 rounded-lg border-2 border-gray-600 shadow-lg">
-                <div className="absolute bottom-4 right-4 w-32 h-24 bg-gray-700 rounded-lg border-2 border-gray-600 shadow-lg">
-                  {/* Self video */}
-                </div>
-              </div>
+              ))}
+            </div>
+            
+            {/* Self video */}
+            <div className="absolute bottom-20 right-4 w-32 h-24 bg-gray-700 rounded-lg border-2 border-gray-600 shadow-lg flex items-center justify-center">
+              <div className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full"></div>
+              <Video className="h-6 w-6 text-gray-400" />
             </div>
           </div>
         ) : (

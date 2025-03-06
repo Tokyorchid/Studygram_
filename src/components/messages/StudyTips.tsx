@@ -4,20 +4,20 @@ import { Lightbulb, Sparkles, Flame, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 
 const StudyTips = () => {
-  const tips = [
+  const videoCallTips = [
     "Pop on some lo-fi beats and grind for 25 mins, then vibe check for 5. It's called Pomodoro and it slaps!",
-    "Drop your notes in the group chat after each sesh. The squad's feedback hits different frfr.",
-    "Stuck on something? No cap, just ask! The group chat's for actual help, not just memes.",
-    "Build a shared vocab list with all the main character energy terms. #BigBrainTime",
-    "Quizzing each other is lowkey the best way to see if you're actually getting it or just zoning.",
-    "Try explaining concepts like you're making a TikTok. If you can't make it short & fire, you don't get it yet.",
-    "Study aesthetics matter! Set up your space to be Instagram-worthy and watch your motivation skyrocket.",
-    "Record voice notes explaining tricky concepts - play them back while you're touching grass later.",
-    "Speedrun your flashcards and try to beat your high score each day. Gamify that grind!",
-    "Create a shared playlist where everyone adds songs that help them focus. Real ones only!",
+    "Share your screen to review notes together - explaining concepts to others is the best way to learn!",
+    "Use the chat feature to drop quick links and resources without interrupting the speaker.",
+    "Take turns being the 'teacher' - each person gets 5 minutes to explain a topic from their notes.",
+    "Set clear goals for the video session at the start - what do you want to accomplish together?",
+    "If someone's struggling with a concept, use the annotation tools to highlight and explain.",
+    "Record key parts of your study session to review later when you're prepping for the exam.",
+    "Keep your camera on to stay accountable - it's harder to get distracted when others can see you!",
+    "Use hand signals for 'I need to speak' or 'I understand' to avoid talking over each other.",
+    "Schedule quick 2-minute stretch breaks every 30 minutes to keep everyone fresh and focused.",
   ];
   
-  const randomTip = tips[Math.floor(Math.random() * tips.length)];
+  const randomTip = videoCallTips[Math.floor(Math.random() * videoCallTips.length)];
   
   const icons = [
     <Lightbulb className="text-yellow-400 w-5 h-5 mr-2 shrink-0 mt-0.5" />,
