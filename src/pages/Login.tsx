@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -41,7 +40,7 @@ const Login = () => {
       }
     } catch (error: any) {
       toast({
-        title: "Oops! Something went wrong 😬",
+        title: "Yikes! Something went wrong 😬",
         description: error.message,
         variant: "destructive",
       });
@@ -59,24 +58,24 @@ const Login = () => {
         <div className="backdrop-blur-sm bg-black/50 border border-purple-500/20 shadow-xl rounded-xl p-8">
           <div className="text-center mb-8 space-y-3">
             <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
-              {isSignUp ? "Join the Community ✨" : "Welcome Back!"}
+              {isSignUp ? "Join the Vibe ✨" : "Back to the Grind!"}
             </h1>
             <p className="text-gray-400">
               {isSignUp
-                ? "Time to level up your study journey"
-                : "Let's continue your learning adventure! 💫"}
+                ? "Time to level up your study game"
+                : "Let's continue your learning journey! 💫"}
             </p>
             <p className="text-sm text-purple-400/80">
               {isSignUp
-                ? "You're about to become the main character of your study journey"
-                : "Back to making progress on your academic goals"}
+                ? "You're about to be the main character of your study story"
+                : "Back to slaying those academic goals"}
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
               type="email"
-              placeholder="Your email address"
+              placeholder="Drop your email here"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -84,7 +83,7 @@ const Login = () => {
             />
             <Input
               type="password"
-              placeholder="Your password"
+              placeholder="Password (make it slay)"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -95,7 +94,7 @@ const Login = () => {
               className="w-full bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 hover:opacity-90 transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
             >
               <Sparkles className="mr-2 h-4 w-4" />
-              {isSignUp ? "Start Your Journey" : "Continue Learning"}
+              {isSignUp ? "Start Your Era" : "Continue The Vibe"}
             </Button>
           </form>
 
@@ -105,8 +104,8 @@ const Login = () => {
               className="text-sm text-purple-400 hover:text-purple-300 hover:underline transition-colors"
             >
               {isSignUp
-                ? "Already have an account? Sign in"
-                : "New here? Create an account"}
+                ? "Already in the squad? Sign in"
+                : "New here? Create your vibe"}
             </button>
           </div>
         </div>
@@ -114,18 +113,18 @@ const Login = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-white">
           <div className="backdrop-blur-sm bg-white/5 p-6 rounded-xl border border-purple-500/20 text-center transform hover:scale-[1.02] transition-all duration-200">
             <BookOpen className="w-8 h-8 mx-auto mb-4 text-purple-400" />
-            <h3 className="font-semibold mb-2 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Study Your Way</h3>
-            <p className="text-sm text-gray-400">Your journey, your learning style</p>
+            <h3 className="font-semibold mb-2 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Study Your Vibe</h3>
+            <p className="text-sm text-gray-400">Your journey, your aesthetic</p>
           </div>
           <div className="backdrop-blur-sm bg-white/5 p-6 rounded-xl border border-purple-500/20 text-center transform hover:scale-[1.02] transition-all duration-200">
             <Users className="w-8 h-8 mx-auto mb-4 text-purple-400" />
-            <h3 className="font-semibold mb-2 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Community Goals</h3>
-            <p className="text-sm text-gray-400">Connect with motivated study partners</p>
+            <h3 className="font-semibold mb-2 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Squad Goals</h3>
+            <p className="text-sm text-gray-400">Link with the study crew</p>
           </div>
           <div className="backdrop-blur-sm bg-white/5 p-6 rounded-xl border border-purple-500/20 text-center transform hover:scale-[1.02] transition-all duration-200">
             <Trophy className="w-8 h-8 mx-auto mb-4 text-purple-400" />
             <h3 className="font-semibold mb-2 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Level Up</h3>
-            <p className="text-sm text-gray-400">Watch your academic progress grow</p>
+            <p className="text-sm text-gray-400">Watch your academic glow-up</p>
           </div>
         </div>
       </div>

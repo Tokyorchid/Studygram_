@@ -81,7 +81,7 @@ const Profile = () => {
       }
     } catch (error: any) {
       toast({
-        title: "bestie, we hit a snag 😔",
+        title: "oof, we hit a snag 😔",
         description: error.message,
         variant: "destructive",
       });
@@ -107,7 +107,7 @@ const Profile = () => {
       }
     } catch (error: any) {
       toast({
-        title: "couldn't get your study posts bestie 😭",
+        title: "couldn't get your study posts fr 😭",
         description: error.message,
         variant: "destructive",
       });
@@ -118,7 +118,7 @@ const Profile = () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
       toast({
-        title: "bestie, we couldn't sign you out 😭",
+        title: "yikes, couldn't sign you out 😭",
         description: error.message,
         variant: "destructive",
       });

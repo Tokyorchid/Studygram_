@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -13,7 +14,7 @@ const Index = () => {
   const { toast } = useToast();
 
   const loadingTexts = [
-    "bestie wait a sec ✨",
+    "wait a sec ✨",
     "manifesting your success rn 🌟",
     "loading good vibes only ~",
     "spilling the tea... ☕",

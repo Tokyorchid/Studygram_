@@ -31,7 +31,7 @@ export const StudyPosts = ({ posts, onPostsUpdate }: StudyPostsProps) => {
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Please login first!");
+      if (!user) throw new Error("Login check failed, try again!");
 
       const fileExt = file.name.split('.').pop();
       const filePath = `${user.id}/post_${Math.random()}.${fileExt}`;
@@ -66,11 +66,11 @@ export const StudyPosts = ({ posts, onPostsUpdate }: StudyPostsProps) => {
       
       toast({
         title: "Post shared! 📚✨",
-        description: "Your study progress has been posted!",
+        description: "Your study flex has been posted!",
       });
     } catch (error: any) {
       toast({
-        title: "Post failed 😭",
+        title: "Post failed, not vibing 😭",
         description: error.message,
         variant: "destructive",
       });
@@ -99,7 +99,7 @@ export const StudyPosts = ({ posts, onPostsUpdate }: StudyPostsProps) => {
               className="flex items-center gap-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
             >
               <ImagePlus size={20} />
-              {uploadingPost ? "Uploading..." : "Share Today's Study"}
+              {uploadingPost ? "Uploading..." : "Share Your Study Flex"}
             </button>
             <input
               ref={fileInputRef}
@@ -112,7 +112,7 @@ export const StudyPosts = ({ posts, onPostsUpdate }: StudyPostsProps) => {
           <Textarea
             value={newPostCaption}
             onChange={(e) => setNewPostCaption(e.target.value)}
-            placeholder="Add a caption to your study post..."
+            placeholder="Caption your study moment... make it slay!"
             className="bg-white/5 border-none text-white resize-none"
             rows={2}
           />
