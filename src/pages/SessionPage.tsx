@@ -10,7 +10,6 @@ import { motion } from "framer-motion";
 import { Json } from "@/integrations/supabase/types";
 import CallView from "@/components/messages/CallView";
 
-// Define types for our metadata structures
 interface TaskItem {
   id: string;
   text: string;
@@ -42,7 +41,6 @@ const SessionPage = () => {
   const [isVideoCall, setIsVideoCall] = useState(false);
   const [showChat, setShowChat] = useState(true);
 
-  // Fetch session details
   const { data: session, isLoading: isSessionLoading } = useQuery({
     queryKey: ['sessionDetails', sessionId],
     queryFn: async () => {
@@ -57,7 +55,6 @@ const SessionPage = () => {
     },
   });
 
-  // Fetch participants
   const { data: participants, isLoading: isParticipantsLoading } = useQuery({
     queryKey: ['sessionParticipants', sessionId],
     queryFn: async () => {
@@ -78,7 +75,6 @@ const SessionPage = () => {
     enabled: !!sessionId,
   });
 
-  // Timer effect
   useEffect(() => {
     if (!session) return;
     
@@ -103,7 +99,6 @@ const SessionPage = () => {
     return () => clearInterval(interval);
   }, [isPaused, session, sessionEnded, toast]);
 
-  // Check authentication
   useEffect(() => {
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -114,10 +109,8 @@ const SessionPage = () => {
     checkUser();
   }, [navigate]);
 
-  // Initialize tasks for task-based sessions
   useEffect(() => {
     if (session?.session_type === 'task_based' && session.metadata) {
-      // Safely cast metadata to our type
       const sessionMetadata = session.metadata as SessionMetadata;
       if (sessionMetadata.tasks) {
         setTasks(sessionMetadata.tasks);
@@ -159,7 +152,6 @@ const SessionPage = () => {
       )
     );
     
-    // Calculate new progress
     const newTasks = tasks.map(task => 
       task.id === taskId ? { ...task, completed: !task.completed } : task
     );
@@ -718,5 +710,49 @@ const SessionPage = () => {
         animate={{ opacity: 1, y: 0 }}
         className="max-w-6xl mx-auto space-y-6"
       >
-        <
+        <div className="flex flex-col md:flex-row items-start justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold">{session.title}</h1>
+            <p className="text-gray-400 mt-1">{session.description}</p>
+            
+            <div className="flex flex-wrap gap-3 mt-3">
+              <div className="flex items-center gap-1 text-sm text-gray-400">
+                <Clock className="h-4 w-4" />
+                <span>
+                  {session.start_time && format(new Date(session.start_time), 'MMM d, h:mm a')}
+                </span>
+              </div>
+              <div className="flex items-center gap-1 text-sm text-gray-400">
+                <Users className="h-4 w-4" />
+                <span>{participants?.length || 0} participants</span>
+              </div>
+            </div>
+          </div>
+          
+          {!sessionEnded && !isInCall && (
+            <div className="flex flex-wrap gap-2">
+              <Button 
+                onClick={() => startCall(true)}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <Video className="mr-2 h-4 w-4" />
+                Video Call
+              </Button>
+              <Button 
+                onClick={() => startCall(false)}
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                <Phone className="mr-2 h-4 w-4" />
+                Audio Call
+              </Button>
+            </div>
+          )}
+        </div>
+        
+        {renderSessionContent()}
+      </motion.div>
+    </div>
+  );
+};
 
+export default SessionPage;
