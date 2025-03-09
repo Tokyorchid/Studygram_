@@ -1,4 +1,5 @@
 
+import React from "react";
 import AchievementCard from "./AchievementCard";
 import { Award, Brain, Timer } from "lucide-react";
 
