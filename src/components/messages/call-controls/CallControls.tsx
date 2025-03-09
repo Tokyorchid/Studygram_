@@ -1,15 +1,23 @@
 
 import React, { useState, useEffect } from "react";
-import { Video, VideoOff, Mic, MicOff, MessageSquare, Phone, Settings } from "lucide-react";
+import { Video, VideoOff, Mic, MicOff, MessageSquare, Phone, Settings, MonitorUp } from "lucide-react";
 import CallControlButton from "./CallControlButton";
 import AudioVisualizer from "./AudioVisualizer";
 import EnhancedModeSettings from "./EnhancedModeSettings";
 import { CallControlsProps } from "./types";
 
-const CallControls = ({ onEndCall, onToggleChat, isVideoCall = false, onToggleVideo, onToggleMute }: CallControlsProps) => {
+const CallControls = ({ 
+  onEndCall, 
+  onToggleChat, 
+  isVideoCall = false, 
+  onToggleVideo, 
+  onToggleMute,
+  onToggleScreenShare 
+}: CallControlsProps) => {
   // State management for controls
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOn, setIsVideoOn] = useState(isVideoCall);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [isEnhancedMode, setIsEnhancedMode] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
@@ -40,6 +48,13 @@ const CallControls = ({ onEndCall, onToggleChat, isVideoCall = false, onToggleVi
     }
   };
   
+  const toggleScreenShare = () => {
+    setIsScreenSharing(!isScreenSharing);
+    if (onToggleScreenShare) {
+      onToggleScreenShare(!isScreenSharing);
+    }
+  };
+  
   const toggleEnhancedMode = () => setIsEnhancedMode(!isEnhancedMode);
   const toggleSettings = () => setShowSettings(!showSettings);
 
@@ -63,6 +78,15 @@ const CallControls = ({ onEndCall, onToggleChat, isVideoCall = false, onToggleVi
             icon={<Video className="h-5 w-5" />}
             activeIcon={<VideoOff className="h-5 w-5 text-red-500" />}
             activeClass="bg-gray-800 border-red-500/30"
+          />
+        )}
+        
+        {isVideoCall && (
+          <CallControlButton
+            onClick={toggleScreenShare}
+            active={isScreenSharing}
+            icon={<MonitorUp className="h-5 w-5" />}
+            activeClass="bg-gray-800 border-green-500/50"
           />
         )}
         

@@ -15,4 +15,5 @@ export interface CallControlsProps {
   isVideoCall?: boolean;
   onToggleVideo?: (videoOff: boolean) => void;
   onToggleMute?: (muted: boolean) => void;
+  onToggleScreenShare?: (screenSharing: boolean) => void;
 }

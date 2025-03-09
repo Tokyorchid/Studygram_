@@ -1,10 +1,11 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Phone, Users, Sparkles, Video, VideoOff, Mic, MicOff } from "lucide-react";
+import { Phone, Users, Sparkles, Video, VideoOff, Mic, MicOff, MonitorUp } from "lucide-react";
 import CallControls from "./call-controls/CallControls";
 import StudyTips from "./StudyTips";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface CallViewProps {
   isVideoCall: boolean;
@@ -25,6 +26,12 @@ const CallView = ({
   const [showTip, setShowTip] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [streams, setStreams] = useState<MediaStream[]>([]);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const screenShareRef = useRef<HTMLVideoElement>(null);
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+  const { toast } = useToast();
 
   // Simulate getting participants
   useEffect(() => {
@@ -40,14 +47,125 @@ const CallView = ({
     return () => clearTimeout(timer);
   }, [activeChat]);
 
-  const handleToggleVideo = (videoOff: boolean) => {
+  // Initialize user media when the component mounts
+  useEffect(() => {
+    if (isVideoCall) {
+      initializeUserMedia();
+    }
+    
+    // Cleanup function to stop all media tracks when component unmounts
+    return () => {
+      streams.forEach(stream => {
+        stream.getTracks().forEach(track => {
+          track.stop();
+        });
+      });
+    };
+  }, [isVideoCall]);
+
+  // Initialize user media
+  const initializeUserMedia = async () => {
+    try {
+      const videoConstraints = {
+        audio: true,
+        video: true
+      };
+      
+      const userMediaStream = await navigator.mediaDevices.getUserMedia(videoConstraints);
+      setStreams(prev => [...prev, userMediaStream]);
+      
+      // Connect the stream to the local video element
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = userMediaStream;
+      }
+      
+      toast({
+        title: "Camera and microphone active",
+        description: "You are now connected with video and audio",
+      });
+    } catch (error) {
+      console.error("Error accessing media devices:", error);
+      toast({
+        title: "Error accessing camera or microphone",
+        description: "Please check your device permissions",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleToggleVideo = async (videoOff: boolean) => {
     setIsVideoOff(videoOff);
+    
+    if (streams.length > 0) {
+      const videoTracks = streams[0].getVideoTracks();
+      videoTracks.forEach(track => {
+        track.enabled = !videoOff;
+      });
+    }
+    
     console.log("Video toggled:", videoOff ? "off" : "on");
   };
 
   const handleToggleMute = (muted: boolean) => {
     setIsMuted(muted);
+    
+    if (streams.length > 0) {
+      const audioTracks = streams[0].getAudioTracks();
+      audioTracks.forEach(track => {
+        track.enabled = !muted;
+      });
+    }
+    
     console.log("Microphone toggled:", muted ? "muted" : "unmuted");
+  };
+
+  const handleToggleScreenShare = async (screenSharing: boolean) => {
+    setIsScreenSharing(screenSharing);
+    
+    if (screenSharing) {
+      try {
+        const screenStream = await navigator.mediaDevices.getDisplayMedia({
+          video: true,
+          audio: true
+        });
+        
+        setStreams(prev => [...prev, screenStream]);
+        
+        if (screenShareRef.current) {
+          screenShareRef.current.srcObject = screenStream;
+        }
+        
+        toast({
+          title: "Screen sharing active",
+          description: "You are now sharing your screen",
+        });
+        
+        // When the user stops screen sharing through the browser UI
+        screenStream.getVideoTracks()[0].onended = () => {
+          setIsScreenSharing(false);
+          screenStream.getTracks().forEach(track => track.stop());
+          setStreams(prev => prev.filter(s => s !== screenStream));
+        };
+      } catch (error) {
+        console.error("Error sharing screen:", error);
+        setIsScreenSharing(false);
+        toast({
+          title: "Screen sharing failed",
+          description: "Unable to share your screen",
+          variant: "destructive"
+        });
+      }
+    } else {
+      // Stop screen sharing
+      const screenStream = streams.find(stream => 
+        stream.getVideoTracks().some(track => track.label.includes('screen') || track.label.includes('window'))
+      );
+      
+      if (screenStream) {
+        screenStream.getTracks().forEach(track => track.stop());
+        setStreams(prev => prev.filter(s => s !== screenStream));
+      }
+    }
   };
 
   return (
@@ -64,6 +182,26 @@ const CallView = ({
           <div className="w-full h-full flex flex-col">
             {/* Main video area */}
             <div className="relative w-full flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto p-2">
+              {isScreenSharing && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5 }}
+                  className="relative col-span-1 md:col-span-2 aspect-video bg-gray-800/80 rounded-lg overflow-hidden backdrop-blur-sm border border-green-500/30 flex items-center justify-center"
+                >
+                  <div className="absolute top-2 left-2 px-2 py-1 bg-black/50 backdrop-blur-sm rounded text-xs text-white flex items-center">
+                    <MonitorUp className="h-3 w-3 mr-1 text-green-400" />
+                    Screen Share
+                  </div>
+                  <video 
+                    ref={screenShareRef}
+                    autoPlay 
+                    playsInline
+                    className="w-full h-full object-contain"
+                  />
+                </motion.div>
+              )}
+              
               {participants.map((participant, index) => (
                 <motion.div
                   key={index}
@@ -77,9 +215,14 @@ const CallView = ({
                     {participant}
                   </div>
                   
-                  {/* Placeholder for video */}
-                  {isVideoOff && index === 0 ? (
-                    <VideoOff className="h-10 w-10 text-gray-500" />
+                  {/* Placeholder for remote video */}
+                  {index === 0 ? (
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-purple-900/30 to-blue-900/30 flex items-center justify-center">
                       <Video className="h-10 w-10 text-gray-500" />
@@ -90,14 +233,18 @@ const CallView = ({
             </div>
             
             {/* Self video */}
-            <div className="absolute bottom-20 right-4 w-32 h-24 bg-gray-700 rounded-lg border-2 border-gray-600 shadow-lg flex items-center justify-center">
+            <div className="absolute bottom-20 right-4 w-32 h-24 bg-gray-700 rounded-lg border-2 border-gray-600 shadow-lg flex items-center justify-center overflow-hidden">
               <div className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full"></div>
               {isVideoOff ? (
                 <VideoOff className="h-6 w-6 text-gray-400" />
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-green-900/30 to-blue-900/30 flex items-center justify-center">
-                  <Video className="h-6 w-6 text-gray-400" />
-                </div>
+                <video
+                  ref={localVideoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full h-full object-cover"
+                />
               )}
             </div>
           </div>
@@ -144,6 +291,7 @@ const CallView = ({
           isVideoCall={isVideoCall}
           onToggleVideo={handleToggleVideo}
           onToggleMute={handleToggleMute}
+          onToggleScreenShare={handleToggleScreenShare}
         />
       </div>
     </div>
