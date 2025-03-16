@@ -1,11 +1,12 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 import { 
   Upload, File, FileText, Image, Video, PenSquare, 
-  BookOpen, FileSpreadsheet, Trash 
+  BookOpen, FileSpreadsheet, Trash, UserPlus
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface SharedFile {
   id: string;
@@ -38,6 +39,7 @@ const StudyFileSharing = () => {
       date: "Yesterday"
     }
   ]);
+  const [isUploading, setIsUploading] = useState(false);
 
   const getFileIcon = (type: string) => {
     switch (type) {
@@ -63,19 +65,55 @@ const StudyFileSharing = () => {
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files;
     if (fileList && fileList.length > 0) {
-      const newFiles: SharedFile[] = Array.from(fileList).map(file => ({
-        id: Date.now().toString() + Math.random().toString(36).substring(2),
-        name: file.name,
-        type: file.name.split('.').pop() || "unknown",
-        size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
-        url: URL.createObjectURL(file),
-        uploadedBy: "You",
-        date: "Just now"
-      }));
-      setFiles([...newFiles, ...files]);
+      setIsUploading(true);
+      
+      try {
+        const uploadedFiles: SharedFile[] = [];
+        
+        for (let i = 0; i < fileList.length; i++) {
+          const file = fileList[i];
+          const fileExt = file.name.split('.').pop() || "unknown";
+          const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+          
+          const filePath = `study-materials/${fileName}`;
+          
+          const { data, error } = await supabase.storage
+            .from('study-materials')
+            .upload(filePath, file);
+            
+          if (error) {
+            console.error("Error uploading file:", error);
+            toast.error(`Failed to upload ${file.name}`);
+            continue;
+          }
+          
+          const { data: urlData } = supabase.storage
+            .from('study-materials')
+            .getPublicUrl(filePath);
+            
+          uploadedFiles.push({
+            id: Date.now().toString() + Math.random().toString(36).substring(2),
+            name: file.name,
+            type: fileExt,
+            size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+            url: urlData.publicUrl,
+            uploadedBy: "You",
+            date: "Just now"
+          });
+          
+          toast.success(`${file.name} uploaded successfully`);
+        }
+        
+        setFiles([...uploadedFiles, ...files]);
+      } catch (err) {
+        console.error("Error in file upload:", err);
+        toast.error("Something went wrong during upload");
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
@@ -91,12 +129,13 @@ const StudyFileSharing = () => {
         <label className="block">
           <div className="flex items-center justify-center p-4 border-2 border-dashed border-gray-600 rounded-lg hover:border-purple-400 transition-colors cursor-pointer bg-gray-800/30">
             <Upload className="w-5 h-5 mr-2 text-purple-400" />
-            <span>Upload study materials</span>
+            <span>{isUploading ? "Uploading..." : "Upload study materials"}</span>
             <Input 
               type="file" 
               className="hidden" 
               onChange={handleFileUpload}
               multiple
+              disabled={isUploading}
             />
           </div>
         </label>

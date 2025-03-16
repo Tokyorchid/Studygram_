@@ -12,6 +12,8 @@ import StudyPomodoroTimer from "@/components/messages/StudyPomodoroTimer";
 import CollaborativeNotes from "@/components/messages/CollaborativeNotes";
 import StudyFileSharing from "@/components/messages/StudyFileSharing";
 import { MessageProps } from "@/components/messages/types";
+import { Button } from "@/components/ui/button";
+import { UserPlus } from "lucide-react";
 
 const Messages = () => {
   const [activeChat, setActiveChat] = useState("study-group-a");
@@ -115,16 +117,33 @@ const Messages = () => {
     }
   };
 
+  const createNewGroup = () => {
+    // This would typically open a modal or form
+    toast.success("Create group functionality will be implemented soon!");
+  };
+
   return (
     <div className="min-h-screen bg-black text-white">
       <div className="h-screen flex flex-col md:flex-row">
-        <ChatSidebar
-          activeChat={activeChat}
-          setActiveChat={setActiveChat}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          messages={messages}
-        />
+        <div className="md:w-80 flex flex-col">
+          <ChatSidebar
+            activeChat={activeChat}
+            setActiveChat={setActiveChat}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            messages={messages}
+          />
+          
+          <div className="p-4 bg-gray-900/50 backdrop-blur-xl border-t border-purple-500/20">
+            <Button 
+              className="w-full bg-gradient-to-r from-purple-500 to-pink-500"
+              onClick={createNewGroup}
+            >
+              <UserPlus className="mr-2 h-4 w-4" />
+              Create Group
+            </Button>
+          </div>
+        </div>
 
         <div className="flex-1 flex flex-col">
           <ChatHeader
