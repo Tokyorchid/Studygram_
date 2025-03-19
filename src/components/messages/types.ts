@@ -19,3 +19,18 @@ export interface ChatPreviewProps {
   active?: boolean;
   onClick: () => void;
 }
+
+export interface GroupMember {
+  id: string;
+  name: string;
+  avatar?: string;
+}
+
+export interface GroupChat {
+  id: string;
+  name: string;
+  description?: string;
+  members: GroupMember[];
+  createdBy: string;
+  createdAt: string;
+}

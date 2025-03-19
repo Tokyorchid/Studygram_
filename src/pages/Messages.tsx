@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import "../styles/gradientText.css";
 
@@ -12,8 +12,6 @@ import StudyPomodoroTimer from "@/components/messages/StudyPomodoroTimer";
 import CollaborativeNotes from "@/components/messages/CollaborativeNotes";
 import StudyFileSharing from "@/components/messages/StudyFileSharing";
 import { MessageProps } from "@/components/messages/types";
-import { Button } from "@/components/ui/button";
-import { UserPlus } from "lucide-react";
 
 const Messages = () => {
   const [activeChat, setActiveChat] = useState("study-group-a");
@@ -90,6 +88,26 @@ const Messages = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isRecording, setIsRecording] = useState(false);
 
+  // Load any saved groups from localStorage
+  useEffect(() => {
+    const savedGroups = Object.keys(localStorage)
+      .filter(key => key.startsWith("group-name-"))
+      .map(key => {
+        const groupId = key.replace("group-name-", "");
+        return { id: groupId, name: localStorage.getItem(key) || groupId };
+      });
+    
+    // Initialize empty message arrays for saved groups
+    const newMessages = { ...messages };
+    savedGroups.forEach(group => {
+      if (!newMessages[group.id]) {
+        newMessages[group.id] = [];
+      }
+    });
+    
+    setMessages(newMessages);
+  }, []);
+
   const startCall = (video: boolean) => {
     setIsInCall(true);
     setIsVideoCall(video);
@@ -109,6 +127,10 @@ const Messages = () => {
   };
 
   const getChatName = (chatId: string): string => {
+    if (chatId.startsWith("group-")) {
+      return localStorage.getItem(`group-name-${chatId}`) || chatId;
+    }
+    
     switch (chatId) {
       case "study-group-a": return "Study Group A";
       case "math-squad": return "Math Squad";
@@ -117,9 +139,24 @@ const Messages = () => {
     }
   };
 
-  const createNewGroup = () => {
-    // This would typically open a modal or form
-    toast.success("Create group functionality will be implemented soon!");
+  const handleCreateGroup = (groupId: string, groupName: string) => {
+    // Add the new group to the messages state with an empty messages array
+    if (!messages[groupId]) {
+      setMessages(prev => ({
+        ...prev,
+        [groupId]: [{
+          id: "welcome-1",
+          sender: "System",
+          content: `Welcome to ${groupName}! Add members and start chatting.`,
+          time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+        }]
+      }));
+    }
+    
+    // Set the new group as active
+    setActiveChat(groupId);
+    
+    toast.success(`Group "${groupName}" created successfully!`);
   };
 
   return (
@@ -132,17 +169,8 @@ const Messages = () => {
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             messages={messages}
+            onCreateGroup={handleCreateGroup}
           />
-          
-          <div className="p-4 bg-gray-900/50 backdrop-blur-xl border-t border-purple-500/20">
-            <Button 
-              className="w-full bg-gradient-to-r from-purple-500 to-pink-500"
-              onClick={createNewGroup}
-            >
-              <UserPlus className="mr-2 h-4 w-4" />
-              Create Group
-            </Button>
-          </div>
         </div>
 
         <div className="flex-1 flex flex-col">
@@ -176,7 +204,7 @@ const Messages = () => {
           )}
 
           {(!isInCall || isChatVisible) && (
-            <MessageList messages={messages[activeChat]} />
+            <MessageList messages={messages[activeChat] || []} />
           )}
 
           {(!isInCall || isChatVisible) && (
