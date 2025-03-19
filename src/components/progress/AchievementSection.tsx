@@ -12,7 +12,7 @@ const AchievementSection: React.FC = () => {
         icon={<Award className="h-6 w-6 text-purple-400" />}
         iconBgColor="bg-purple-500/20"
         valueColor="text-purple-400"
-        quote="\"Make it right, make it shine\" - you're doing amazing!"
+        quote={'\"Make it right, make it shine\" - you\'re doing amazing!'}
       />
       
       <AchievementCard
@@ -21,7 +21,7 @@ const AchievementSection: React.FC = () => {
         icon={<Brain className="h-6 w-6 text-pink-400" />}
         iconBgColor="bg-pink-500/20"
         valueColor="text-pink-400"
-        quote="\"Focus on your dreams\" - keep that concentration!"
+        quote={'\"Focus on your dreams\" - keep that concentration!'}
       />
       
       <AchievementCard
@@ -30,7 +30,7 @@ const AchievementSection: React.FC = () => {
         icon={<Timer className="h-6 w-6 text-blue-400" />}
         iconBgColor="bg-blue-500/20"
         valueColor="text-blue-400"
-        quote="\"We are bulletproof\" - nothing can stop you!"
+        quote={'\"We are bulletproof\" - nothing can stop you!'}
       />
     </div>
   );
