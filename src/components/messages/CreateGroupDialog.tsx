@@ -1,20 +1,13 @@
 
-import React, { useState } from "react";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle,
-  DialogFooter,
-  DialogDescription
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
-import { UsersPlus, X, Plus, Check } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar } from "@/components/ui/avatar";
+import { Check, Plus, Search, UserPlus, X } from "lucide-react";
 import { GroupMember } from "./types";
 
 interface CreateGroupDialogProps {
@@ -23,196 +16,150 @@ interface CreateGroupDialogProps {
   onGroupCreated: (groupId: string, groupName: string) => void;
 }
 
-const CreateGroupDialog = ({ 
-  open, 
-  onOpenChange,
-  onGroupCreated
-}: CreateGroupDialogProps) => {
+const CreateGroupDialog = ({ open, onOpenChange, onGroupCreated }: CreateGroupDialogProps) => {
   const [groupName, setGroupName] = useState("");
   const [description, setDescription] = useState("");
-  const [members, setMembers] = useState<GroupMember[]>([
-    { id: "user-1", name: "You" },
-    { id: "user-2", name: "Alex" },
-  ]);
-  const [newMemberName, setNewMemberName] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedMembers, setSelectedMembers] = useState<GroupMember[]>([]);
   
-  const addMember = () => {
-    if (!newMemberName.trim()) return;
-    
-    const newMember: GroupMember = {
-      id: `user-${Date.now()}`, // In a real app, this would be a valid user ID
-      name: newMemberName,
-    };
-    
-    setMembers([...members, newMember]);
-    setNewMemberName("");
+  // Mock users - in a real app, this would come from your database
+  const mockUsers: GroupMember[] = [
+    { id: "user1", name: "Alex Johnson", avatar: "/placeholder.svg" },
+    { id: "user2", name: "Taylor Swift", avatar: "/placeholder.svg" },
+    { id: "user3", name: "Morgan Freeman", avatar: "/placeholder.svg" },
+    { id: "user4", name: "Emma Watson", avatar: "/placeholder.svg" },
+    { id: "user5", name: "Keanu Reeves", avatar: "/placeholder.svg" },
+  ];
+  
+  const filteredUsers = mockUsers.filter(user => 
+    user.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+    !selectedMembers.some(member => member.id === user.id)
+  );
+  
+  const handleSelectMember = (member: GroupMember) => {
+    setSelectedMembers([...selectedMembers, member]);
   };
   
-  const removeMember = (memberId: string) => {
-    setMembers(members.filter(member => member.id !== memberId));
+  const handleRemoveMember = (memberId: string) => {
+    setSelectedMembers(selectedMembers.filter(member => member.id !== memberId));
   };
   
-  const handleCreateGroup = async () => {
-    if (!groupName.trim()) {
-      toast.error("Please enter a group name");
-      return;
-    }
+  const handleCreateGroup = () => {
+    if (!groupName.trim()) return;
     
-    setIsCreating(true);
+    const groupId = `group-${Date.now()}`;
+    onGroupCreated(groupId, groupName);
     
-    try {
-      // In a production app, we would store this in Supabase
-      const groupId = `group-${Date.now()}`;
-      const timestamp = new Date().toISOString();
-      
-      // Create a new group in the database
-      // For now, we'll just simulate this
-      // In a real app with Supabase:
-      /* 
-      const { data, error } = await supabase
-        .from('chat_groups')
-        .insert({
-          id: groupId,
-          name: groupName,
-          description: description,
-          created_by: 'user-1', // Current user ID
-          created_at: timestamp,
-        })
-        .select();
-        
-      if (error) throw error;
-      
-      // Add members to the group
-      const memberInserts = members.map(member => ({
-        group_id: groupId,
-        user_id: member.id,
-        added_at: timestamp
-      }));
-      
-      const { error: membersError } = await supabase
-        .from('group_members')
-        .insert(memberInserts);
-        
-      if (membersError) throw membersError;
-      */
-      
-      // For the demo, we'll just simulate success
-      toast.success("Group created successfully!");
-      onGroupCreated(groupId, groupName);
-      onOpenChange(false);
-      
-      // Reset form
-      setGroupName("");
-      setDescription("");
-      setMembers([{ id: "user-1", name: "You" }]);
-    } catch (error) {
-      console.error("Error creating group:", error);
-      toast.error("Failed to create group");
-    } finally {
-      setIsCreating(false);
-    }
-  };
-  
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      addMember();
-    }
+    // Reset form
+    setGroupName("");
+    setDescription("");
+    setSelectedMembers([]);
+    onOpenChange(false);
   };
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-gray-900 border border-purple-500/20 text-white max-w-md">
+      <DialogContent className="sm:max-w-[500px] bg-gray-900 border border-purple-500/20 text-white">
         <DialogHeader>
-          <DialogTitle className="text-xl gradient-text">Create Study Group</DialogTitle>
-          <DialogDescription className="text-gray-400">
-            Create a new chat group to study together with friends
-          </DialogDescription>
+          <DialogTitle className="text-2xl font-bold gradient-text">Create Study Group</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="group-name">Group Name</Label>
-            <Input
-              id="group-name"
-              placeholder="Enter group name..."
+            <Input 
+              id="group-name" 
+              placeholder="Enter group name..." 
               value={groupName}
               onChange={(e) => setGroupName(e.target.value)}
-              className="bg-gray-800/50 border-gray-700"
+              className="bg-gray-800 border-gray-700"
             />
           </div>
           
           <div className="space-y-2">
             <Label htmlFor="description">Description (Optional)</Label>
-            <Textarea
-              id="description"
-              placeholder="What will this group focus on?"
+            <Textarea 
+              id="description" 
+              placeholder="What's this group about?" 
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="bg-gray-800/50 border-gray-700 min-h-[80px]"
+              className="bg-gray-800 border-gray-700 min-h-[100px]"
             />
           </div>
           
           <div className="space-y-2">
-            <Label>Members</Label>
-            <div className="bg-gray-800/50 border border-gray-700 rounded-md p-2 max-h-[120px] overflow-y-auto">
-              {members.map((member) => (
-                <div 
-                  key={member.id} 
-                  className="flex items-center justify-between py-1 px-2 rounded hover:bg-gray-700/50"
-                >
-                  <span>{member.name}{member.id === "user-1" ? " (You)" : ""}</span>
-                  {member.id !== "user-1" && (
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => removeMember(member.id)}
-                      className="h-6 w-6 rounded-full hover:bg-red-500/20 hover:text-red-400"
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  )}
-                </div>
-              ))}
+            <Label>Add Members</Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Search for classmates..."
+                className="pl-10 bg-gray-800 border-gray-700"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
-          </div>
-          
-          <div className="flex gap-2">
-            <Input
-              placeholder="Add member by name..."
-              value={newMemberName}
-              onChange={(e) => setNewMemberName(e.target.value)}
-              onKeyDown={handleKeyPress}
-              className="bg-gray-800/50 border-gray-700"
-            />
-            <Button 
-              onClick={addMember} 
-              variant="outline"
-              className="border-purple-500/50 hover:bg-purple-500/20"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
+            
+            {/* Selected members */}
+            {selectedMembers.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {selectedMembers.map(member => (
+                  <div 
+                    key={member.id}
+                    className="bg-purple-500/20 rounded-full px-3 py-1 flex items-center gap-2"
+                  >
+                    <span className="text-sm">{member.name}</span>
+                    <button 
+                      onClick={() => handleRemoveMember(member.id)}
+                      className="text-gray-400 hover:text-white"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {/* User search results */}
+            {searchTerm && (
+              <ScrollArea className="h-[150px] mt-2 rounded-md border border-gray-700 bg-gray-800/50">
+                {filteredUsers.length === 0 ? (
+                  <div className="p-4 text-gray-400 text-center">No users found</div>
+                ) : (
+                  <div className="p-2">
+                    {filteredUsers.map(user => (
+                      <button
+                        key={user.id}
+                        className="w-full text-left p-2 hover:bg-gray-700/50 rounded-md flex items-center gap-3"
+                        onClick={() => handleSelectMember(user)}
+                      >
+                        <Avatar>
+                          <img src={user.avatar} alt={user.name} />
+                        </Avatar>
+                        <span>{user.name}</span>
+                        <Plus size={16} className="ml-auto text-gray-400" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            )}
           </div>
         </div>
         
         <DialogFooter>
-          <Button
-            variant="ghost"
+          <Button 
+            variant="outline" 
             onClick={() => onOpenChange(false)}
-            className="hover:bg-gray-700/50"
+            className="border-gray-700 text-gray-300"
           >
             Cancel
           </Button>
           <Button 
+            disabled={!groupName.trim()} 
             onClick={handleCreateGroup}
-            disabled={isCreating}
             className="bg-gradient-to-r from-purple-500 to-pink-500"
           >
-            {isCreating ? 
-              "Creating..." : 
-              <><UsersPlus className="mr-2 h-4 w-4" /> Create Group</>
-            }
+            Create Group
           </Button>
         </DialogFooter>
       </DialogContent>
