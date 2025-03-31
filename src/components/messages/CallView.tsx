@@ -15,6 +15,14 @@ interface CallViewProps {
   toggleChat: () => void;
 }
 
+// Configuration for WebRTC
+const configuration = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+  ]
+};
+
 const CallView = ({ 
   isVideoCall, 
   activeChat, 
@@ -27,62 +35,157 @@ const CallView = ({
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
-  const [streams, setStreams] = useState<MediaStream[]>([]);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const screenShareRef = useRef<HTMLVideoElement>(null);
+  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const [remoteStreams, setRemoteStreams] = useState<Map<string, MediaStream>>(new Map());
   const localVideoRef = useRef<HTMLVideoElement>(null);
+  const screenShareRef = useRef<HTMLVideoElement>(null);
+  const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map());
   const { toast } = useToast();
 
-  // Simulate getting participants
+  // Function to create a channel for WebRTC signaling
+  const createSignalingChannel = (sessionId: string) => {
+    return supabase.channel(`call:${sessionId}`, {
+      config: {
+        broadcast: {
+          self: false
+        }
+      }
+    });
+  };
+
+  // Initialize call setup on component mount
   useEffect(() => {
-    // This would be replaced with actual data fetching
-    const fakeParticipants = ["User 1", "User 2", "User 3"];
-    setParticipants(fakeParticipants);
+    const initializeCall = async () => {
+      try {
+        // Get participant info from the session
+        const { data: sessionParticipants } = await supabase
+          .from('session_participants')
+          .select(`
+            user_id,
+            profiles:user_id (
+              username,
+              avatar_url
+            )
+          `)
+          .eq('session_id', activeChat);
 
-    // Hide study tip after 10 seconds
-    const timer = setTimeout(() => {
-      setShowTip(false);
-    }, 10000);
+        if (sessionParticipants && sessionParticipants.length > 0) {
+          const participantNames = sessionParticipants.map(p => 
+            p.profiles?.username || 'Anonymous'
+          );
+          setParticipants(participantNames);
+        } else {
+          // Set default participants if no data
+          setParticipants(["User 1", "User 2", "User 3"]);
+        }
 
-    return () => clearTimeout(timer);
-  }, [activeChat]);
+        // Initialize media for video calls
+        if (isVideoCall) {
+          await initializeUserMedia();
+        }
 
-  // Initialize user media when the component mounts
-  useEffect(() => {
-    if (isVideoCall) {
-      initializeUserMedia();
-    }
-    
-    // Cleanup function to stop all media tracks when component unmounts
-    return () => {
-      streams.forEach(stream => {
-        stream.getTracks().forEach(track => {
-          track.stop();
+        // Setup real-time connection for WebRTC signaling
+        const channel = createSignalingChannel(activeChat);
+        
+        // Handle incoming offers
+        channel.on('broadcast', { event: 'offer' }, async (payload) => {
+          console.log('Received offer:', payload);
+          await handleOffer(payload.payload, payload.sender);
         });
-      });
-    };
-  }, [isVideoCall]);
+        
+        // Handle incoming answers
+        channel.on('broadcast', { event: 'answer' }, async (payload) => {
+          console.log('Received answer:', payload);
+          await handleAnswer(payload.payload, payload.sender);
+        });
+        
+        // Handle ICE candidates
+        channel.on('broadcast', { event: 'ice-candidate' }, async (payload) => {
+          console.log('Received ICE candidate:', payload);
+          await handleIceCandidate(payload.payload, payload.sender);
+        });
+        
+        // Subscribe to the channel
+        channel.subscribe();
 
-  // Initialize user media
+        // Hide study tip after 10 seconds
+        const timer = setTimeout(() => {
+          setShowTip(false);
+        }, 10000);
+
+        // Clean up
+        return () => {
+          clearTimeout(timer);
+          if (localStream) {
+            localStream.getTracks().forEach(track => track.stop());
+          }
+          
+          // Close all peer connections
+          peerConnectionsRef.current.forEach(peerConnection => {
+            peerConnection.close();
+          });
+          
+          channel.unsubscribe();
+        };
+      } catch (error) {
+        console.error("Error initializing call:", error);
+        toast({
+          title: "Error initializing call",
+          description: "Failed to set up call. Please try again.",
+          variant: "destructive"
+        });
+      }
+    };
+
+    initializeCall();
+  }, [activeChat, isVideoCall]);
+
+  // Connect local video stream to video element
+  useEffect(() => {
+    if (localStream && localVideoRef.current) {
+      localVideoRef.current.srcObject = localStream;
+    }
+  }, [localStream]);
+
+  // Initialize user media (camera and microphone)
   const initializeUserMedia = async () => {
     try {
-      const videoConstraints = {
+      const mediaConstraints = {
         audio: true,
-        video: true
+        video: isVideoCall
       };
       
-      const userMediaStream = await navigator.mediaDevices.getUserMedia(videoConstraints);
-      setStreams(prev => [...prev, userMediaStream]);
-      
-      // Connect the stream to the local video element
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = userMediaStream;
-      }
+      const stream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
+      setLocalStream(stream);
       
       toast({
-        title: "Camera and microphone active",
-        description: "You are now connected with video and audio",
+        title: "Media initialized",
+        description: isVideoCall 
+          ? "Camera and microphone are active" 
+          : "Microphone is active",
       });
+
+      // Create peer connections for each participant
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const channel = createSignalingChannel(activeChat);
+        
+        // Get other participants
+        const { data: otherParticipants } = await supabase
+          .from('session_participants')
+          .select('user_id')
+          .eq('session_id', activeChat)
+          .neq('user_id', user.id);
+          
+        if (otherParticipants && otherParticipants.length > 0) {
+          // Create a peer connection for each participant
+          for (const participant of otherParticipants) {
+            createPeerConnection(participant.user_id, stream, channel);
+          }
+        }
+      }
+
+      return stream;
     } catch (error) {
       console.error("Error accessing media devices:", error);
       toast({
@@ -90,14 +193,162 @@ const CallView = ({
         description: "Please check your device permissions",
         variant: "destructive"
       });
+      throw error;
+    }
+  };
+
+  // Create a peer connection for a participant
+  const createPeerConnection = async (
+    participantId: string, 
+    stream: MediaStream, 
+    channel: any
+  ) => {
+    try {
+      // Create a new RTCPeerConnection
+      const peerConnection = new RTCPeerConnection(configuration);
+      
+      // Store the connection
+      peerConnectionsRef.current.set(participantId, peerConnection);
+      
+      // Add all tracks from the local stream to the peer connection
+      stream.getTracks().forEach(track => {
+        peerConnection.addTrack(track, stream);
+      });
+      
+      // Handle ICE candidates
+      peerConnection.onicecandidate = (event) => {
+        if (event.candidate) {
+          channel.send({
+            type: 'broadcast',
+            event: 'ice-candidate',
+            payload: event.candidate,
+            sender: participantId
+          });
+        }
+      };
+      
+      // Handle incoming tracks (remote streams)
+      peerConnection.ontrack = (event) => {
+        console.log('Received remote track', event);
+        if (event.streams && event.streams[0]) {
+          setRemoteStreams(prev => {
+            const newStreams = new Map(prev);
+            newStreams.set(participantId, event.streams[0]);
+            return newStreams;
+          });
+        }
+      };
+      
+      // Create and send an offer
+      const offer = await peerConnection.createOffer();
+      await peerConnection.setLocalDescription(offer);
+      
+      channel.send({
+        type: 'broadcast',
+        event: 'offer',
+        payload: offer,
+        sender: participantId
+      });
+
+      return peerConnection;
+    } catch (error) {
+      console.error("Error creating peer connection:", error);
+      toast({
+        title: "Error connecting to peer",
+        description: "Failed to establish connection with another participant",
+        variant: "destructive"
+      });
+      throw error;
+    }
+  };
+
+  // Handle an incoming offer
+  const handleOffer = async (offer: RTCSessionDescriptionInit, senderId: string) => {
+    try {
+      // Create a peer connection if it doesn't exist
+      if (!peerConnectionsRef.current.has(senderId) && localStream) {
+        const channel = createSignalingChannel(activeChat);
+        const peerConnection = new RTCPeerConnection(configuration);
+        
+        // Store the connection
+        peerConnectionsRef.current.set(senderId, peerConnection);
+        
+        // Add all tracks from the local stream
+        localStream.getTracks().forEach(track => {
+          peerConnection.addTrack(track, localStream);
+        });
+        
+        // Handle ICE candidates
+        peerConnection.onicecandidate = (event) => {
+          if (event.candidate) {
+            channel.send({
+              type: 'broadcast',
+              event: 'ice-candidate',
+              payload: event.candidate,
+              sender: senderId
+            });
+          }
+        };
+        
+        // Handle incoming tracks
+        peerConnection.ontrack = (event) => {
+          if (event.streams && event.streams[0]) {
+            setRemoteStreams(prev => {
+              const newStreams = new Map(prev);
+              newStreams.set(senderId, event.streams[0]);
+              return newStreams;
+            });
+          }
+        };
+        
+        // Set the remote description (the offer)
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+        
+        // Create and send an answer
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+        
+        channel.send({
+          type: 'broadcast',
+          event: 'answer',
+          payload: answer,
+          sender: senderId
+        });
+      }
+    } catch (error) {
+      console.error("Error handling offer:", error);
+    }
+  };
+
+  // Handle an incoming answer
+  const handleAnswer = async (answer: RTCSessionDescriptionInit, senderId: string) => {
+    try {
+      const peerConnection = peerConnectionsRef.current.get(senderId);
+      if (peerConnection) {
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+      }
+    } catch (error) {
+      console.error("Error handling answer:", error);
+    }
+  };
+
+  // Handle an incoming ICE candidate
+  const handleIceCandidate = async (candidate: RTCIceCandidateInit, senderId: string) => {
+    try {
+      const peerConnection = peerConnectionsRef.current.get(senderId);
+      if (peerConnection) {
+        await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+      }
+    } catch (error) {
+      console.error("Error handling ICE candidate:", error);
     }
   };
 
   const handleToggleVideo = async (videoOff: boolean) => {
     setIsVideoOff(videoOff);
     
-    if (streams.length > 0) {
-      const videoTracks = streams[0].getVideoTracks();
+    if (localStream) {
+      const videoTracks = localStream.getVideoTracks();
       videoTracks.forEach(track => {
         track.enabled = !videoOff;
       });
@@ -109,8 +360,8 @@ const CallView = ({
   const handleToggleMute = (muted: boolean) => {
     setIsMuted(muted);
     
-    if (streams.length > 0) {
-      const audioTracks = streams[0].getAudioTracks();
+    if (localStream) {
+      const audioTracks = localStream.getAudioTracks();
       audioTracks.forEach(track => {
         track.enabled = !muted;
       });
@@ -129,11 +380,20 @@ const CallView = ({
           audio: true
         });
         
-        setStreams(prev => [...prev, screenStream]);
-        
         if (screenShareRef.current) {
           screenShareRef.current.srcObject = screenStream;
         }
+        
+        // Share the screen with all peers
+        peerConnectionsRef.current.forEach(peerConnection => {
+          const sender = peerConnection.getSenders().find(s => 
+            s.track?.kind === 'video'
+          );
+          
+          if (sender) {
+            sender.replaceTrack(screenStream.getVideoTracks()[0]);
+          }
+        });
         
         toast({
           title: "Screen sharing active",
@@ -143,8 +403,22 @@ const CallView = ({
         // When the user stops screen sharing through the browser UI
         screenStream.getVideoTracks()[0].onended = () => {
           setIsScreenSharing(false);
-          screenStream.getTracks().forEach(track => track.stop());
-          setStreams(prev => prev.filter(s => s !== screenStream));
+          
+          // Restore the camera video
+          if (localStream) {
+            const videoTrack = localStream.getVideoTracks()[0];
+            if (videoTrack) {
+              peerConnectionsRef.current.forEach(peerConnection => {
+                const sender = peerConnection.getSenders().find(s => 
+                  s.track?.kind === 'video'
+                );
+                
+                if (sender) {
+                  sender.replaceTrack(videoTrack);
+                }
+              });
+            }
+          }
         };
       } catch (error) {
         console.error("Error sharing screen:", error);
@@ -157,13 +431,26 @@ const CallView = ({
       }
     } else {
       // Stop screen sharing
-      const screenStream = streams.find(stream => 
-        stream.getVideoTracks().some(track => track.label.includes('screen') || track.label.includes('window'))
-      );
+      if (screenShareRef.current && screenShareRef.current.srcObject) {
+        const stream = screenShareRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+        screenShareRef.current.srcObject = null;
+      }
       
-      if (screenStream) {
-        screenStream.getTracks().forEach(track => track.stop());
-        setStreams(prev => prev.filter(s => s !== screenStream));
+      // Restore the camera video
+      if (localStream) {
+        const videoTrack = localStream.getVideoTracks()[0];
+        if (videoTrack) {
+          peerConnectionsRef.current.forEach(peerConnection => {
+            const sender = peerConnection.getSenders().find(s => 
+              s.track?.kind === 'video'
+            );
+            
+            if (sender) {
+              sender.replaceTrack(videoTrack);
+            }
+          });
+        }
       }
     }
   };
@@ -202,7 +489,32 @@ const CallView = ({
                 </motion.div>
               )}
               
-              {participants.map((participant, index) => (
+              {/* Remote participant videos */}
+              {Array.from(remoteStreams).map(([participantId, stream], index) => (
+                <motion.div
+                  key={participantId}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  className="relative aspect-video bg-gray-800/80 rounded-lg overflow-hidden backdrop-blur-sm border border-purple-500/10 flex items-center justify-center"
+                >
+                  <div className="absolute top-2 left-2 px-2 py-1 bg-black/50 backdrop-blur-sm rounded text-xs text-white flex items-center">
+                    <Mic className="h-3 w-3 mr-1" />
+                    {participants[index] || `Participant ${index + 1}`}
+                  </div>
+                  <video
+                    autoPlay
+                    playsInline
+                    className="w-full h-full object-cover"
+                    ref={el => {
+                      if (el) el.srcObject = stream;
+                    }}
+                  />
+                </motion.div>
+              ))}
+              
+              {/* Placeholder videos if no remote streams */}
+              {remoteStreams.size === 0 && participants.map((participant, index) => (
                 <motion.div
                   key={index}
                   initial={{ opacity: 0, scale: 0.8 }}
@@ -214,20 +526,9 @@ const CallView = ({
                     {isMuted ? <MicOff className="h-3 w-3 mr-1 text-red-400" /> : <Mic className="h-3 w-3 mr-1" />}
                     {participant}
                   </div>
-                  
-                  {/* Placeholder for remote video */}
-                  {index === 0 ? (
-                    <video
-                      ref={videoRef}
-                      autoPlay
-                      playsInline
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-purple-900/30 to-blue-900/30 flex items-center justify-center">
-                      <Video className="h-10 w-10 text-gray-500" />
-                    </div>
-                  )}
+                  <div className="w-full h-full bg-gradient-to-br from-purple-900/30 to-blue-900/30 flex items-center justify-center">
+                    <Video className="h-10 w-10 text-gray-500" />
+                  </div>
                 </motion.div>
               ))}
             </div>
