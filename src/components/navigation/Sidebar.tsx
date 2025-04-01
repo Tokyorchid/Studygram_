@@ -1,3 +1,4 @@
+
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   BarChart3, BookOpen, Home, MessageSquare, Settings, 
@@ -89,36 +90,36 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const sidebarVariants = {
     open: { 
       x: 0,
-      opacity: 1,
-      transition: { type: "spring", stiffness: 300, damping: 30 }
+      transition: { 
+        type: "spring", 
+        stiffness: 300, 
+        damping: 30 
+      }
     },
     closed: { 
       x: "-100%", 
-      opacity: 0,
-      transition: { type: "spring", stiffness: 300, damping: 30 } 
+      transition: { 
+        type: "spring", 
+        stiffness: 300, 
+        damping: 30 
+      } 
     }
   };
 
-  const mobileClass = "fixed top-0 left-0 h-full z-20 shadow-2xl";
-  
-  const desktopClass = "hidden md:block";
-
   return (
     <AnimatePresence>
-      {(isOpen || window.innerWidth > 768) && (
+      {isOpen && (
         <>
-          {isOpen && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 z-10 md:hidden"
-              onClick={onClose}
-            />
-          )}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            onClick={onClose}
+          />
           
           <motion.div 
-            className={`${isOpen ? mobileClass : desktopClass} w-64 ${sidebarStyle} border-r border-purple-500/20 overflow-y-auto`}
+            className={`fixed top-0 left-0 h-full z-50 w-64 ${sidebarStyle} border-r border-purple-500/20 overflow-y-auto shadow-2xl`}
             variants={sidebarVariants}
             initial="closed"
             animate="open"
@@ -130,7 +131,11 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                   <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
                     <span className="text-xl font-bold text-white">S</span>
                   </div>
-                  <h1 className="text-xl font-bold">Studygram</h1>
+                  <div className="text-xl font-serif tracking-wider">
+                    <span className="text-gray-100">STUDY</span>
+                    <span className="text-purple-500">/</span>
+                    <span className="text-gray-100">GRAM</span>
+                  </div>
                 </div>
                 <button 
                   className="text-gray-400 hover:text-purple-400 transition-colors p-2 rounded-full hover:bg-purple-500/10"

@@ -30,14 +30,18 @@ function App() {
     setSidebarOpen(!sidebarOpen);
   };
 
+  const closeSidebar = () => {
+    setSidebarOpen(false);
+  };
+
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
         <div className="app-container">
-          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+          <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
           <div className="main-wrapper">
             <MobileHeader onMenuToggle={toggleSidebar} />
-            <main className="main-content">
+            <main className="main-content mt-16">
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/posts" element={<Posts />} />
