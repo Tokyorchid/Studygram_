@@ -5,6 +5,7 @@ import { Home, BookOpen, MessageSquare, User, Sun, Moon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import LogoComponent from "./navigation/LogoComponent";
 
 const Header = () => {
   const [theme, setTheme] = useState<"light" | "dark">("dark");
@@ -55,18 +56,7 @@ const Header = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center">
-            <div className="flex items-center">
-              <div className="h-10 w-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center mr-3">
-                <span className="text-xl font-bold text-white">S</span>
-              </div>
-              <div className="text-2xl font-serif tracking-wider">
-                <span className="text-white">STUDY</span>
-                <span className="text-purple-500">/</span>
-                <span className="text-white">GRAM</span>
-              </div>
-            </div>
-          </Link>
+          <LogoComponent />
 
           {/* Navigation */}
           <NavigationMenu>
