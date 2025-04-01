@@ -3,42 +3,42 @@ import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Paperclip, Send, Mic, Image, FileText, Clock, X, Check } from "lucide-react";
-import { sendDirectMessage } from "@/services/directMessageService";
-import { toast } from "sonner";
+import { MessageProps } from "./types";
 
 interface MessageInputProps {
   activeChat: string;
+  messages: Record<string, MessageProps[]>;
+  setMessages: React.Dispatch<React.SetStateAction<Record<string, MessageProps[]>>>;
   isRecording: boolean;
   setIsRecording: React.Dispatch<React.SetStateAction<boolean>>;
-  onMessageSent: (chatId: string) => void;
 }
 
 const MessageInput = ({ 
   activeChat, 
+  messages, 
+  setMessages,
   isRecording,
-  setIsRecording,
-  onMessageSent
+  setIsRecording
 }: MessageInputProps) => {
   const [newMessage, setNewMessage] = useState("");
   const [showAttachmentOptions, setShowAttachmentOptions] = useState(false);
-  const [isSending, setIsSending] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSendMessage = async () => {
-    if (newMessage.trim() === "" || isSending || !activeChat) return;
-
-    setIsSending(true);
-    try {
-      const sent = await sendDirectMessage(activeChat, newMessage.trim());
-      if (sent) {
-        setNewMessage("");
-        onMessageSent(activeChat);
-      }
-    } catch (error) {
-      console.error("Error sending message:", error);
-      toast.error("Failed to send message");
-    } finally {
-      setIsSending(false);
+  const handleSendMessage = () => {
+    if (newMessage.trim()) {
+      const message: MessageProps = {
+        id: Date.now().toString(),
+        sender: "You",
+        content: newMessage,
+        time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+      };
+      
+      setMessages({
+        ...messages,
+        [activeChat]: [...messages[activeChat], message]
+      });
+      
+      setNewMessage("");
     }
   };
 
@@ -54,34 +54,31 @@ const MessageInput = ({
     console.log("Started audio recording");
   };
 
-  const stopRecording = async () => {
+  const stopRecording = () => {
     setIsRecording(false);
     console.log("Stopped audio recording");
     
-    setIsSending(true);
-    try {
-      const sent = await sendDirectMessage(
-        activeChat, 
-        "Voice message",
+    const newAudioMessage: MessageProps = {
+      id: Date.now().toString(),
+      sender: "You",
+      content: "",
+      time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+      attachments: [
         {
-          url: "/sounds/ambient.mp3",
           type: "audio",
-          name: "voice_message.mp3"
+          url: "/sounds/ambient.mp3",
+          filename: "voice_message.mp3"
         }
-      );
-      
-      if (sent) {
-        onMessageSent(activeChat);
-      }
-    } catch (error) {
-      console.error("Error sending voice message:", error);
-      toast.error("Failed to send voice message");
-    } finally {
-      setIsSending(false);
-    }
+      ]
+    };
+    
+    setMessages({
+      ...messages,
+      [activeChat]: [...messages[activeChat], newAudioMessage]
+    });
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
       console.log("File selected:", files[0].name);
@@ -97,30 +94,24 @@ const MessageInput = ({
       
       const url = URL.createObjectURL(file);
       
-      setIsSending(true);
-      try {
-        const sent = await sendDirectMessage(
-          activeChat,
-          fileType === 'image' ? "📷 Image" : 
-          fileType === 'video' ? "🎥 Video" : 
-          fileType === 'audio' ? "🎵 Audio" : 
-          "📄 Document",
+      const newFileMessage: MessageProps = {
+        id: Date.now().toString(),
+        sender: "You",
+        content: "",
+        time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+        attachments: [
           {
+            type: fileType as "image" | "audio" | "video" | "document",
             url,
-            type: fileType,
-            name: file.name
+            filename: file.name
           }
-        );
-        
-        if (sent) {
-          onMessageSent(activeChat);
-        }
-      } catch (error) {
-        console.error("Error sending file:", error);
-        toast.error("Failed to send file");
-      } finally {
-        setIsSending(false);
-      }
+        ]
+      };
+      
+      setMessages({
+        ...messages,
+        [activeChat]: [...messages[activeChat], newFileMessage]
+      });
     }
     
     if (fileInputRef.current) {
@@ -162,7 +153,6 @@ const MessageInput = ({
           size="icon" 
           className="rounded-full h-10 w-10"
           onClick={() => setShowAttachmentOptions(!showAttachmentOptions)}
-          disabled={isSending}
         >
           <Paperclip className="h-5 w-5" />
         </Button>
@@ -174,7 +164,6 @@ const MessageInput = ({
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={handleKeyPress}
-            disabled={isRecording || isSending}
           />
         </div>
         
@@ -186,7 +175,6 @@ const MessageInput = ({
               size="icon" 
               className="rounded-full h-10 w-10"
               onClick={startRecording}
-              disabled={isSending}
             >
               <Mic className="h-5 w-5" />
             </Button>
@@ -195,13 +183,8 @@ const MessageInput = ({
               type="button" 
               className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-full h-10 w-10"
               onClick={handleSendMessage}
-              disabled={newMessage.trim() === "" || isSending}
             >
-              {isSending ? (
-                <div className="h-4 w-4 border-2 border-white rounded-full border-t-transparent animate-spin"></div>
-              ) : (
-                <Send className="h-5 w-5" />
-              )}
+              <Send className="h-5 w-5" />
             </Button>
           </>
         ) : (

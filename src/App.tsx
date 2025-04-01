@@ -1,6 +1,5 @@
 
-import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Sidebar from "./components/navigation/Sidebar";
 import Index from "./pages/Index";
 import Posts from "./pages/Posts";
@@ -22,23 +21,6 @@ import { useState } from "react";
 import "./App.css";
 import "./styles/gradientText.css"; // Import the gradient text styles
 
-// Contact redirect component to handle /messages?contact=userId
-const ContactRedirect = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const contactId = params.get('contact');
-    
-    if (contactId) {
-      navigate('/messages');
-    }
-  }, [navigate, location]);
-  
-  return null;
-};
-
 function App() {
   // Create a client
   const queryClient = new QueryClient();
@@ -55,7 +37,6 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
-        <ContactRedirect />
         <div className="app-container">
           <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
           <div className="main-wrapper">

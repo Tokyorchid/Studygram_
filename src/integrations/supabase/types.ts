@@ -9,42 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      direct_messages: {
-        Row: {
-          attachment_name: string | null
-          attachment_type: string | null
-          attachment_url: string | null
-          content: string
-          created_at: string
-          id: string
-          is_read: boolean
-          recipient_id: string
-          sender_id: string
-        }
-        Insert: {
-          attachment_name?: string | null
-          attachment_type?: string | null
-          attachment_url?: string | null
-          content: string
-          created_at?: string
-          id?: string
-          is_read?: boolean
-          recipient_id: string
-          sender_id: string
-        }
-        Update: {
-          attachment_name?: string | null
-          attachment_type?: string | null
-          attachment_url?: string | null
-          content?: string
-          created_at?: string
-          id?: string
-          is_read?: boolean
-          recipient_id?: string
-          sender_id?: string
-        }
-        Relationships: []
-      }
       posts: {
         Row: {
           available_from: string
@@ -323,27 +287,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      user_follows: {
-        Row: {
-          created_at: string
-          follower_id: string
-          following_id: string
-          id: string
-        }
-        Insert: {
-          created_at?: string
-          follower_id: string
-          following_id: string
-          id?: string
-        }
-        Update: {
-          created_at?: string
-          follower_id?: string
-          following_id?: string
-          id?: string
-        }
-        Relationships: []
       }
     }
     Views: {
