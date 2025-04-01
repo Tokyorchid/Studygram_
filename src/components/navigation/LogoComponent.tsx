@@ -1,38 +1,40 @@
 
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import { Compass } from "lucide-react";
 
 const LogoComponent = () => {
   return (
     <Link to="/" className="flex items-center group">
-      <div className="relative h-10 w-12 mr-2">
-        <motion.div 
-          className="absolute h-full w-full"
-          initial={{ opacity: 0, scale: 0.8, rotate: -15 }}
-          animate={{ opacity: 1, scale: 1, rotate: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-8 w-8 bg-purple-400/30 rounded-sm transform rotate-45 shadow-lg" />
-        </motion.div>
-        
-        <motion.div 
-          className="absolute h-full w-full"
-          initial={{ opacity: 0, scale: 0.8, rotate: 15 }}
-          animate={{ opacity: 1, scale: 1, rotate: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-8 w-8 bg-blue-500/30 rounded-sm transform rotate-45 shadow-lg" />
-        </motion.div>
-        
+      <div className="relative h-10 w-10 mr-2">
+        {/* Circular background */}
         <motion.div 
           className="absolute h-full w-full"
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
         >
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-8 w-8 bg-purple-600 rounded-sm transform rotate-45 shadow-lg flex items-center justify-center">
-            <span className="text-xs font-bold text-white transform -rotate-45">SG</span>
-          </div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-9 w-9 bg-purple-600/20 rounded-full shadow-lg" />
+        </motion.div>
+        
+        {/* Inner circle */}
+        <motion.div 
+          className="absolute h-full w-full"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-7 w-7 bg-blue-500/20 rounded-full shadow-lg" />
+        </motion.div>
+        
+        {/* Compass icon */}
+        <motion.div 
+          className="absolute h-full w-full flex items-center justify-center"
+          initial={{ opacity: 0, rotate: -45 }}
+          animate={{ opacity: 1, rotate: 0 }}
+          transition={{ duration: 0.7, delay: 0.4 }}
+        >
+          <Compass className="w-6 h-6 text-purple-600" strokeWidth={2.5} />
         </motion.div>
       </div>
       
