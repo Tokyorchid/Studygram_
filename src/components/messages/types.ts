@@ -54,3 +54,10 @@ export interface UserContact {
   avatar_url: string | null;
   lastMessage?: DirectMessage;
 }
+
+export interface UserFollow {
+  id: string;
+  follower_id: string;
+  following_id: string;
+  created_at: string;
+}

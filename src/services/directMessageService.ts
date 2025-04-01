@@ -53,10 +53,10 @@ export const getContacts = async (): Promise<UserContact[]> => {
       if (!messageError && latestMessage) {
         contactsWithLastMessage.push({
           ...contact,
-          lastMessage: latestMessage
+          lastMessage: latestMessage as DirectMessage
         });
       } else {
-        contactsWithLastMessage.push(contact);
+        contactsWithLastMessage.push(contact as UserContact);
       }
     }
 
@@ -90,7 +90,7 @@ export const getConversation = async (otherUserId: string): Promise<DirectMessag
 
     if (updateError) console.error("Error marking messages as read:", updateError);
 
-    return data || [];
+    return data as DirectMessage[] || [];
   } catch (error: any) {
     console.error("Error fetching conversation:", error.message);
     toast.error("Failed to load messages");
@@ -123,7 +123,7 @@ export const sendDirectMessage = async (
       .single();
 
     if (error) throw error;
-    return data;
+    return data as DirectMessage;
   } catch (error: any) {
     console.error("Error sending message:", error.message);
     toast.error("Failed to send message");
@@ -159,7 +159,7 @@ export const getUserById = async (userId: string): Promise<UserContact | null> =
       .single();
 
     if (error) throw error;
-    return data;
+    return data as UserContact;
   } catch (error: any) {
     console.error("Error fetching user:", error.message);
     return null;
