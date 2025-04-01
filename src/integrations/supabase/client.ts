@@ -19,13 +19,11 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   },
 });
 
-// This is a workaround to inform TypeScript about the tables that exist
-// in our Supabase database but aren't defined in the generated types.
-// The actual runtime behavior is not affected by this workaround.
+// Safely extend the type without redeclaring the entire interface
 declare module '@supabase/supabase-js' {
   interface SupabaseClientOptions<SchemaName> {
-    db: {
-      schema: SchemaName;
+    db?: {
+      schema?: SchemaName;
     };
   }
 }
@@ -49,3 +47,4 @@ export type Tables = {
     created_at: string;
   };
 };
+
