@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Search, UserPlus } from "lucide-react";
@@ -6,15 +5,16 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import ChatPreview from "./ChatPreview";
 import CreateGroupDialog from "./CreateGroupDialog";
-import { MessageProps } from "./types";
+import { UserContact } from "./types";
 
 interface ChatSidebarProps {
-  activeChat: string;
+  activeChat: string | null;
   setActiveChat: (chatId: string) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
-  messages: Record<string, MessageProps[]>;
+  contacts: UserContact[];
   onCreateGroup: (groupId: string, groupName: string) => void;
+  isLoading: boolean;
 }
 
 const ChatSidebar = ({ 
@@ -22,43 +22,53 @@ const ChatSidebar = ({
   setActiveChat, 
   searchQuery, 
   setSearchQuery, 
-  messages,
-  onCreateGroup
+  contacts,
+  onCreateGroup,
+  isLoading
 }: ChatSidebarProps) => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   
-  const getFilteredChats = () => {
-    const allChats = [
-      { id: "study-group-a", name: "Study Group A", lastMessage: messages["study-group-a"]?.slice(-1)[0] },
-      { id: "math-squad", name: "Math Squad", lastMessage: messages["math-squad"]?.slice(-1)[0] },
-      { id: "science-team", name: "Science Team", lastMessage: messages["science-team"]?.slice(-1)[0] }
-    ];
+  const getFilteredContacts = () => {
+    if (!searchQuery) return contacts;
     
-    // Add any custom groups that might have been created during the session
-    Object.keys(messages).forEach(chatId => {
-      if (!allChats.some(chat => chat.id === chatId)) {
-        allChats.push({
-          id: chatId,
-          name: chatId.startsWith("group-") ? localStorage.getItem(`group-name-${chatId}`) || chatId : chatId,
-          lastMessage: messages[chatId]?.slice(-1)[0]
-        });
-      }
+    return contacts.filter(contact => {
+      const fullName = contact.full_name?.toLowerCase() || '';
+      const username = contact.username?.toLowerCase() || '';
+      const lastMessageContent = contact.lastMessage?.content.toLowerCase() || '';
+      const searchTerm = searchQuery.toLowerCase();
+      
+      return fullName.includes(searchTerm) || 
+             username.includes(searchTerm) ||
+             lastMessageContent.includes(searchTerm);
     });
-    
-    if (!searchQuery) return allChats;
-    
-    return allChats.filter(chat => 
-      chat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (chat.lastMessage?.content && chat.lastMessage.content.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
   };
 
-  const handleCreateGroup = (groupId: string, groupName: string) => {
-    // Store the group name in localStorage for this demo
-    localStorage.setItem(`group-name-${groupId}`, groupName);
+  const formatTime = (timestamp: string | undefined) => {
+    if (!timestamp) return "";
     
-    // Call the parent handler to create the group in the messages state
-    onCreateGroup(groupId, groupName);
+    const date = new Date(timestamp);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    // Same day, return time
+    if (date.toDateString() === today.toDateString()) {
+      return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    }
+    
+    // Yesterday
+    if (date.toDateString() === yesterday.toDateString()) {
+      return "Yesterday";
+    }
+    
+    // This week (last 7 days)
+    const daysDiff = Math.floor((today.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    if (daysDiff < 7) {
+      return date.toLocaleDateString(undefined, { weekday: 'short' });
+    }
+    
+    // Otherwise return date
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   };
 
   return (
@@ -93,22 +103,36 @@ const ChatSidebar = ({
       </div>
       
       <div className="space-y-2">
-        {getFilteredChats().map(chat => (
-          <ChatPreview
-            key={chat.id}
-            name={chat.name}
-            lastMessage={chat.lastMessage?.content || "Start chatting..."}
-            time={chat.lastMessage?.time || ""}
-            active={activeChat === chat.id}
-            onClick={() => setActiveChat(chat.id)}
-          />
-        ))}
+        {isLoading ? (
+          <div className="flex justify-center py-8">
+            <div className="animate-spin h-8 w-8 border-4 border-purple-500 rounded-full border-t-transparent"></div>
+          </div>
+        ) : getFilteredContacts().length > 0 ? (
+          getFilteredContacts().map(contact => (
+            <ChatPreview
+              key={contact.id}
+              name={contact.full_name || contact.username || "User"}
+              lastMessage={contact.lastMessage?.content || "Start chatting..."}
+              time={formatTime(contact.lastMessage?.created_at)}
+              active={activeChat === contact.id}
+              onClick={() => setActiveChat(contact.id)}
+            />
+          ))
+        ) : (
+          <div className="text-center py-6 text-gray-400">
+            {searchQuery ? (
+              <p>No results found for "{searchQuery}"</p>
+            ) : (
+              <p>No conversations yet. Use the search to find users.</p>
+            )}
+          </div>
+        )}
       </div>
       
       <CreateGroupDialog 
         open={createDialogOpen} 
         onOpenChange={setCreateDialogOpen}
-        onGroupCreated={handleCreateGroup}
+        onGroupCreated={onCreateGroup}
       />
     </motion.div>
   );

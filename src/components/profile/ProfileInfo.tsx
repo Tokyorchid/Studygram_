@@ -1,11 +1,13 @@
 
-import { useRef } from "react";
-import { Camera, User } from "lucide-react";
+import { useRef, useState, useEffect } from "react";
+import { Camera, User, MessageSquare, UserPlus, UserMinus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+import { followUser, unfollowUser, isFollowing } from "@/services/directMessageService";
 
 interface ProfileData {
   username: string | null;
@@ -33,6 +35,39 @@ export const ProfileInfo = ({
 }: ProfileInfoProps) => {
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const [isCurrentUser, setIsCurrentUser] = useState(true);
+  const [isFollowingUser, setIsFollowingUser] = useState(false);
+  const [profileUserId, setProfileUserId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const checkUser = async () => {
+      // Get current logged in user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      setCurrentUserId(user.id);
+
+      // Check if this profile belongs to someone else (using URL query params)
+      const params = new URLSearchParams(window.location.search);
+      const profileId = params.get('id');
+      
+      if (profileId && profileId !== user.id) {
+        setIsCurrentUser(false);
+        setProfileUserId(profileId);
+        
+        // Check if current user is following this profile
+        const following = await isFollowing(profileId);
+        setIsFollowingUser(following);
+      } else {
+        setIsCurrentUser(true);
+        setProfileUserId(user.id);
+      }
+    };
+    
+    checkUser();
+  }, []);
 
   const uploadAvatar = async (file: File) => {
     try {
@@ -112,6 +147,23 @@ export const ProfileInfo = ({
     }
   };
 
+  const handleFollowToggle = async () => {
+    if (!profileUserId) return;
+    
+    if (isFollowingUser) {
+      const success = await unfollowUser(profileUserId);
+      if (success) setIsFollowingUser(false);
+    } else {
+      const success = await followUser(profileUserId);
+      if (success) setIsFollowingUser(true);
+    }
+  };
+
+  const handleStartConversation = () => {
+    if (!profileUserId) return;
+    navigate(`/messages?contact=${profileUserId}`);
+  };
+
   return (
     <div className="relative -mt-20 mb-8">
       <div className="flex flex-col md:flex-row gap-6 items-start">
@@ -127,12 +179,14 @@ export const ProfileInfo = ({
               <User size={48} className="text-white" />
             )}
           </div>
-          <button 
-            onClick={() => avatarInputRef.current?.click()}
-            className="absolute bottom-0 right-0 bg-purple-500 p-2 rounded-full hover:bg-purple-600 transition-colors"
-          >
-            <Camera className="w-4 h-4 text-white" />
-          </button>
+          {isCurrentUser && (
+            <button 
+              onClick={() => avatarInputRef.current?.click()}
+              className="absolute bottom-0 right-0 bg-purple-500 p-2 rounded-full hover:bg-purple-600 transition-colors"
+            >
+              <Camera className="w-4 h-4 text-white" />
+            </button>
+          )}
           <input
             ref={avatarInputRef}
             type="file"
@@ -181,10 +235,37 @@ export const ProfileInfo = ({
                 <p className="text-white/80 mt-2">{profile.bio}</p>
               )}
               <div className="flex gap-4 mt-4">
-                <Button onClick={() => onEditModeChange(true)}>Edit Profile</Button>
-                <Button variant="destructive" onClick={onSignOut}>
-                  Sign Out
-                </Button>
+                {isCurrentUser ? (
+                  <>
+                    <Button onClick={() => onEditModeChange(true)}>Edit Profile</Button>
+                    <Button variant="destructive" onClick={onSignOut}>
+                      Sign Out
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button 
+                      variant={isFollowingUser ? "outline" : "default"}
+                      onClick={handleFollowToggle}
+                    >
+                      {isFollowingUser ? (
+                        <>
+                          <UserMinus className="mr-2 h-4 w-4" />
+                          Unfollow
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="mr-2 h-4 w-4" />
+                          Follow
+                        </>
+                      )}
+                    </Button>
+                    <Button onClick={handleStartConversation}>
+                      <MessageSquare className="mr-2 h-4 w-4" />
+                      Message
+                    </Button>
+                  </>
+                )}
               </div>
             </>
           )}

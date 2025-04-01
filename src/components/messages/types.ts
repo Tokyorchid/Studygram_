@@ -34,3 +34,23 @@ export interface GroupChat {
   createdBy: string;
   createdAt: string;
 }
+
+export interface DirectMessage {
+  id: string;
+  sender_id: string;
+  recipient_id: string;
+  content: string;
+  created_at: string;
+  attachment_url: string | null;
+  attachment_type: string | null;
+  attachment_name: string | null;
+  is_read: boolean;
+}
+
+export interface UserContact {
+  id: string;
+  username: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+  lastMessage?: DirectMessage;
+}

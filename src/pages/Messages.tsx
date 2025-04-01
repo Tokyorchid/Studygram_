@@ -1,6 +1,6 @@
-
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import "../styles/gradientText.css";
 
 import ChatSidebar from "@/components/messages/ChatSidebar";
@@ -12,74 +12,17 @@ import StudyPomodoroTimer from "@/components/messages/StudyPomodoroTimer";
 import CollaborativeNotes from "@/components/messages/CollaborativeNotes";
 import StudyFileSharing from "@/components/messages/StudyFileSharing";
 import { MessageProps } from "@/components/messages/types";
+import { supabase } from "@/integrations/supabase/client";
+import { getConversation, getContacts, subscribeToMessages, getUserById } from "@/services/directMessageService";
 
 const Messages = () => {
-  const [activeChat, setActiveChat] = useState("study-group-a");
-  const [messages, setMessages] = useState<Record<string, MessageProps[]>>({
-    "study-group-a": [
-      {
-        id: "1",
-        sender: "Alex",
-        content: "Hey everyone! Ready for our study session?",
-        time: "2:30 PM",
-        isStarred: true,
-      },
-      {
-        id: "2",
-        sender: "You",
-        content: "Yes! Let's focus on chapter 5 today",
-        time: "2:31 PM",
-      },
-      {
-        id: "3",
-        sender: "Sarah",
-        content: "Perfect! I had some questions about that chapter",
-        time: "2:32 PM",
-      },
-      {
-        id: "4",
-        sender: "Alex",
-        content: "I've made some notes on the key concepts. Check them out!",
-        time: "2:35 PM",
-        attachments: [
-          {
-            type: "document",
-            url: "/placeholder.svg",
-            filename: "Chapter5_Notes.pdf"
-          }
-        ]
-      }
-    ],
-    "math-squad": [
-      {
-        id: "1",
-        sender: "Jordan",
-        content: "Did everyone finish the homework?",
-        time: "1:20 PM",
-      },
-      {
-        id: "2",
-        sender: "You",
-        content: "I'm stuck on problem 7. Can someone help?",
-        time: "1:25 PM",
-      }
-    ],
-    "science-team": [
-      {
-        id: "1",
-        sender: "Taylor",
-        content: "Check out this cool experiment!",
-        time: "11:30 AM",
-        attachments: [
-          {
-            type: "video",
-            url: "/placeholder.svg",
-            filename: "lab_experiment.mp4"
-          }
-        ]
-      }
-    ]
-  });
+  const [activeChat, setActiveChat] = useState<string | null>(null);
+  const [activeChatName, setActiveChatName] = useState("");
+  const [activeChatAvatar, setActiveChatAvatar] = useState<string | null>(null);
+  const [messages, setMessages] = useState<MessageProps[]>([]);
+  const [contacts, setContacts] = useState<any[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
   const [isInCall, setIsInCall] = useState(false);
   const [isVideoCall, setIsVideoCall] = useState(false);
@@ -87,26 +30,115 @@ const Messages = () => {
   const [isChatVisible, setIsChatVisible] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isRecording, setIsRecording] = useState(false);
+  
+  const navigate = useNavigate();
 
-  // Load any saved groups from localStorage
   useEffect(() => {
-    const savedGroups = Object.keys(localStorage)
-      .filter(key => key.startsWith("group-name-"))
-      .map(key => {
-        const groupId = key.replace("group-name-", "");
-        return { id: groupId, name: localStorage.getItem(key) || groupId };
-      });
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Please sign in to access messages");
+        navigate("/login");
+        return;
+      }
+      
+      setCurrentUser(user);
+      loadContacts();
+    };
     
-    // Initialize empty message arrays for saved groups
-    const newMessages = { ...messages };
-    savedGroups.forEach(group => {
-      if (!newMessages[group.id]) {
-        newMessages[group.id] = [];
+    checkAuth();
+  }, [navigate]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    
+    // Subscribe to new messages
+    const channel = subscribeToMessages(currentUser.id, (newMessage) => {
+      if (activeChat === newMessage.sender_id) {
+        // If we're already chatting with this user, add the message to the current list
+        const messageToAdd: MessageProps = {
+          id: newMessage.id,
+          sender: "Contact",
+          content: newMessage.content,
+          time: new Date(newMessage.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+          attachments: newMessage.attachment_url ? [{
+            type: (newMessage.attachment_type || "document") as "image" | "audio" | "video" | "document",
+            url: newMessage.attachment_url,
+            filename: newMessage.attachment_name || "attachment"
+          }] : undefined
+        };
+        
+        setMessages(prev => [...prev, messageToAdd]);
+      } else {
+        // Otherwise, refresh the contacts list to show the new message
+        loadContacts();
       }
     });
-    
-    setMessages(newMessages);
-  }, []);
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentUser, activeChat]);
+
+  useEffect(() => {
+    if (activeChat) {
+      loadConversation(activeChat);
+    }
+  }, [activeChat]);
+
+  const loadContacts = async () => {
+    setIsLoading(true);
+    try {
+      const contactsList = await getContacts();
+      setContacts(contactsList);
+      
+      // If no active chat is selected and we have contacts, select the first one
+      if (!activeChat && contactsList.length > 0) {
+        setActiveChat(contactsList[0].id);
+        setActiveChatName(contactsList[0].full_name || contactsList[0].username || "Contact");
+        setActiveChatAvatar(contactsList[0].avatar_url);
+      }
+    } catch (error) {
+      console.error("Failed to load contacts:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadConversation = async (userId: string) => {
+    setIsLoading(true);
+    try {
+      // Get user info
+      const userInfo = await getUserById(userId);
+      if (userInfo) {
+        setActiveChatName(userInfo.full_name || userInfo.username || "Contact");
+        setActiveChatAvatar(userInfo.avatar_url);
+      }
+
+      // Get conversation
+      const conversation = await getConversation(userId);
+      
+      // Transform API data to our component's format
+      const formattedMessages = conversation.map(msg => ({
+        id: msg.id,
+        sender: msg.sender_id === currentUser?.id ? "You" : "Contact",
+        content: msg.content,
+        time: new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+        attachments: msg.attachment_url ? [{
+          type: (msg.attachment_type || "document") as "image" | "audio" | "video" | "document",
+          url: msg.attachment_url,
+          filename: msg.attachment_name || "attachment"
+        }] : undefined
+      }));
+      
+      setMessages(formattedMessages);
+    } catch (error) {
+      console.error("Failed to load conversation:", error);
+      toast.error("Failed to load messages");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const startCall = (video: boolean) => {
     setIsInCall(true);
@@ -126,38 +158,19 @@ const Messages = () => {
     setIsChatVisible(!isChatVisible);
   };
 
-  const getChatName = (chatId: string): string => {
-    if (chatId.startsWith("group-")) {
-      return localStorage.getItem(`group-name-${chatId}`) || chatId;
-    }
-    
-    switch (chatId) {
-      case "study-group-a": return "Study Group A";
-      case "math-squad": return "Math Squad";
-      case "science-team": return "Science Team";
-      default: return chatId;
-    }
-  };
-
   const handleCreateGroup = (groupId: string, groupName: string) => {
-    // Add the new group to the messages state with an empty messages array
-    if (!messages[groupId]) {
-      setMessages(prev => ({
-        ...prev,
-        [groupId]: [{
-          id: "welcome-1",
-          sender: "System",
-          content: `Welcome to ${groupName}! Add members and start chatting.`,
-          time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-        }]
-      }));
-    }
-    
-    // Set the new group as active
-    setActiveChat(groupId);
-    
     toast.success(`Group "${groupName}" created successfully!`);
   };
+
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-xl">Please sign in to access messages</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -168,53 +181,66 @@ const Messages = () => {
             setActiveChat={setActiveChat}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-            messages={messages}
+            contacts={contacts}
             onCreateGroup={handleCreateGroup}
+            isLoading={isLoading}
           />
         </div>
 
         <div className="flex-1 flex flex-col">
-          <ChatHeader
-            activeChat={activeChat}
-            isInCall={isInCall}
-            startCall={startCall}
-            endCall={endCall}
-            showStudyTools={showStudyTools}
-            setShowStudyTools={setShowStudyTools}
-          />
+          {activeChat ? (
+            <>
+              <ChatHeader
+                activeChat={activeChat}
+                activeChatName={activeChatName}
+                activeChatAvatar={activeChatAvatar}
+                isInCall={isInCall}
+                startCall={startCall}
+                endCall={endCall}
+                showStudyTools={showStudyTools}
+                setShowStudyTools={setShowStudyTools}
+              />
 
-          {isInCall && (
-            <CallView
-              isVideoCall={isVideoCall}
-              activeChat={activeChat}
-              getChatName={getChatName}
-              endCall={endCall}
-              toggleChat={toggleChat}
-            />
-          )}
+              {isInCall && (
+                <CallView
+                  isVideoCall={isVideoCall}
+                  activeChat={activeChat}
+                  getChatName={() => activeChatName}
+                  endCall={endCall}
+                  toggleChat={toggleChat}
+                />
+              )}
 
-          {showStudyTools && !isInCall && (
-            <div className="grid md:grid-cols-2 gap-4 p-4 bg-gray-900/30">
-              <StudyPomodoroTimer />
-              <CollaborativeNotes sessionId={activeChat} />
-              <div className="md:col-span-2">
-                <StudyFileSharing />
+              {showStudyTools && !isInCall && (
+                <div className="grid md:grid-cols-2 gap-4 p-4 bg-gray-900/30">
+                  <StudyPomodoroTimer />
+                  <CollaborativeNotes sessionId={activeChat} />
+                  <div className="md:col-span-2">
+                    <StudyFileSharing />
+                  </div>
+                </div>
+              )}
+
+              {(!isInCall || isChatVisible) && (
+                <MessageList messages={messages} isLoading={isLoading} />
+              )}
+
+              {(!isInCall || isChatVisible) && (
+                <MessageInput
+                  activeChat={activeChat}
+                  isRecording={isRecording}
+                  setIsRecording={setIsRecording}
+                  onMessageSent={loadConversation}
+                />
+              )}
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center p-8">
+                <h2 className="text-2xl font-semibold mb-4 gradient-text">Select a conversation</h2>
+                <p className="text-gray-400">Choose a contact from the left sidebar or start a new conversation</p>
               </div>
             </div>
-          )}
-
-          {(!isInCall || isChatVisible) && (
-            <MessageList messages={messages[activeChat] || []} />
-          )}
-
-          {(!isInCall || isChatVisible) && (
-            <MessageInput
-              activeChat={activeChat}
-              messages={messages}
-              setMessages={setMessages}
-              isRecording={isRecording}
-              setIsRecording={setIsRecording}
-            />
           )}
         </div>
       </div>
