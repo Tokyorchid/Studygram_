@@ -6,14 +6,18 @@ import type { Database } from './types';
 const SUPABASE_URL = "https://rherlkynqjzbcjdhromt.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJoZXJsa3lucWp6YmNqZGhyb210Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg1OTAxODUsImV4cCI6MjA1NDE2NjE4NX0.rXiaaRAoW4mdpBoWiQ7YfhNgrpvtJ2AmKFUf8H_nwhw";
 
-// Create client with realtime enabled for WebRTC signaling
+// Create client with enhanced realtime settings for WebRTC signaling
 export const supabase = createClient<Database>(
   SUPABASE_URL, 
   SUPABASE_PUBLISHABLE_KEY, 
   {
     realtime: {
       params: {
-        eventsPerSecond: 10
+        eventsPerSecond: 30,  // Increased for better responsiveness
+        transport: 'websocket'
+      },
+      config: {
+        heartbeatIntervalMs: 15000
       }
     }
   }

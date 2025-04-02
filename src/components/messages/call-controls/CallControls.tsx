@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from "react";
-import { Video, VideoOff, Mic, MicOff, MessageSquare, Phone, Settings, MonitorUp } from "lucide-react";
+import { Video, VideoOff, Mic, MicOff, MessageSquare, Phone, Settings, MonitorUp, MonitorStop } from "lucide-react";
 import CallControlButton from "./CallControlButton";
 import AudioVisualizer from "./AudioVisualizer";
 import EnhancedModeSettings from "./EnhancedModeSettings";
 import { CallControlsProps } from "./types";
+import { toast } from "sonner";
 
 const CallControls = ({ 
   onEndCall, 
@@ -39,6 +40,7 @@ const CallControls = ({
     setIsMuted(newMuted);
     if (onToggleMute) {
       onToggleMute(newMuted);
+      toast(newMuted ? "Microphone muted" : "Microphone unmuted");
     }
   };
   
@@ -47,6 +49,7 @@ const CallControls = ({
     setIsVideoOn(newVideoState);
     if (onToggleVideo) {
       onToggleVideo(!newVideoState);
+      toast(newVideoState ? "Camera turned on" : "Camera turned off");
     }
   };
   
@@ -55,11 +58,14 @@ const CallControls = ({
     setIsScreenSharing(newScreenShareState);
     if (onToggleScreenShare) {
       onToggleScreenShare(newScreenShareState);
+      toast(newScreenShareState ? "Screen sharing started" : "Screen sharing stopped");
     }
   };
   
-  const toggleEnhancedMode = () => setIsEnhancedMode(!isEnhancedMode);
-  const toggleSettings = () => setShowSettings(!showSettings);
+  const toggleEnhancedMode = () => {
+    setIsEnhancedMode(!isEnhancedMode);
+    setShowSettings(!showSettings);
+  };
 
   return (
     <div className="flex flex-col items-center">
@@ -89,6 +95,7 @@ const CallControls = ({
             onClick={toggleScreenShare}
             active={isScreenSharing}
             icon={<MonitorUp className="h-5 w-5" />}
+            activeIcon={<MonitorStop className="h-5 w-5 text-green-500" />}
             activeClass="bg-gray-800 border-green-500/50"
           />
         )}
