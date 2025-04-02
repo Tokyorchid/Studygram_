@@ -2,7 +2,7 @@
 import { useRef } from "react";
 import { Camera } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, updateProfile } from "@/integrations/supabase/client";
 
 interface ProfileHeaderProps {
   headerUrl: string | null;
@@ -31,12 +31,9 @@ export const ProfileHeader = ({ headerUrl, onProfileUpdate }: ProfileHeaderProps
         .from('user-content')
         .getPublicUrl(filePath);
 
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ header_url: publicUrl })
-        .eq('id', user.id);
+      const { error } = await updateProfile(user.id, { header_url: publicUrl });
 
-      if (updateError) throw updateError;
+      if (error) throw error;
 
       await onProfileUpdate();
       

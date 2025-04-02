@@ -38,10 +38,15 @@ const StudySessionCard = ({
   const { data: participantCount, refetch: refetchParticipants } = useQuery({
     queryKey: ['sessionParticipants', id],
     queryFn: async () => {
-      const { count } = await supabase
+      const { count, error } = await supabase
         .from('session_participants')
         .select('*', { count: 'exact', head: true })
-        .eq('session_id', id);
+        .eq('session_id', id as any);
+        
+      if (error) {
+        console.error("Error fetching participants count:", error);
+        return 0;
+      }
       return count || 0;
     },
   });
@@ -52,11 +57,16 @@ const StudySessionCard = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return false;
 
-      const { count } = await supabase
+      const { count, error } = await supabase
         .from('session_participants')
         .select('*', { count: 'exact', head: true })
-        .eq('session_id', id)
-        .eq('user_id', user.id);
+        .eq('session_id', id as any)
+        .eq('user_id', user.id as any);
+        
+      if (error) {
+        console.error("Error checking if joined:", error);
+        return false;
+      }
       return count ? count > 0 : false;
     },
   });
@@ -77,7 +87,10 @@ const StudySessionCard = ({
 
       const { error } = await supabase
         .from('session_participants')
-        .insert({ session_id: id, user_id: user.id });
+        .insert({ 
+          session_id: id as any, 
+          user_id: user.id as any 
+        });
 
       if (error) throw error;
 

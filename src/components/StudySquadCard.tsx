@@ -22,10 +22,15 @@ const StudySquadCard = ({ id, name, description, active }: StudySquadCardProps) 
   const { data: memberCount, refetch: refetchMembers } = useQuery({
     queryKey: ['squadMembers', id],
     queryFn: async () => {
-      const { count } = await supabase
+      const { count, error } = await supabase
         .from('squad_members')
         .select('*', { count: 'exact', head: true })
-        .eq('squad_id', id);
+        .eq('squad_id', id as any);
+        
+      if (error) {
+        console.error("Error fetching member count:", error);
+        return 0;
+      }
       return count || 0;
     },
   });
@@ -36,11 +41,16 @@ const StudySquadCard = ({ id, name, description, active }: StudySquadCardProps) 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return false;
 
-      const { count } = await supabase
+      const { count, error } = await supabase
         .from('squad_members')
         .select('*', { count: 'exact', head: true })
-        .eq('squad_id', id)
-        .eq('user_id', user.id);
+        .eq('squad_id', id as any)
+        .eq('user_id', user.id as any);
+        
+      if (error) {
+        console.error("Error checking if joined:", error);
+        return false;
+      }
       return count ? count > 0 : false;
     },
   });
@@ -61,7 +71,10 @@ const StudySquadCard = ({ id, name, description, active }: StudySquadCardProps) 
 
       const { error } = await supabase
         .from('squad_members')
-        .insert({ squad_id: id, user_id: user.id });
+        .insert({ 
+          squad_id: id as any, 
+          user_id: user.id as any 
+        });
 
       if (error) throw error;
 

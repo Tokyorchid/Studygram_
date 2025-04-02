@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,10 +26,15 @@ const CreatePostForm = ({ onSuccess, onCancel }: CreatePostFormProps) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Please sign in to create a post");
 
-      const { error } = await supabase.from("posts").insert({
+      // Type assertion to help TypeScript understand this is a valid insert
+      const postData = {
         ...newPost,
         user_id: user.id,
-      });
+      };
+
+      const { error } = await supabase
+        .from("posts")
+        .insert(postData as any);
 
       if (error) throw error;
 

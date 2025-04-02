@@ -76,26 +76,41 @@ const CallView = ({
         console.log("Current user ID:", userIdRef.current);
         
         // Get session participants
-        const { data: sessionParticipants } = await supabase
-          .from('session_participants')
-          .select(`
-            user_id,
-            profiles:user_id (
-              username,
-              avatar_url
-            )
-          `)
-          .eq('session_id', activeChat);
+        try {
+          const { data, error } = await supabase
+            .from('session_participants')
+            .select(`
+              user_id,
+              profiles:user_id (
+                username,
+                avatar_url
+              )
+            `)
+            .eq('session_id', activeChat as any);
+            
+          if (error) {
+            throw error;
+          }
           
-        if (sessionParticipants && sessionParticipants.length > 0) {
-          const participantNames = sessionParticipants.map(p => 
-            p.profiles?.username || 'Anonymous'
-          );
-          setParticipants(participantNames);
-          console.log("Participants:", participantNames);
-        } else {
+          if (data && data.length > 0) {
+            const participantNames = data
+              .filter(p => p?.profiles?.username) // Filter out invalid entries
+              .map(p => p.profiles?.username || 'Anonymous');
+            
+            if (participantNames.length > 0) {
+              setParticipants(participantNames);
+              console.log("Participants:", participantNames);
+            } else {
+              setParticipants(["User 1", "User 2"]);
+              console.log("No valid participant names found, using defaults");
+            }
+          } else {
+            setParticipants(["User 1", "User 2"]);
+            console.log("No participants found, using defaults");
+          }
+        } catch (err) {
+          console.error("Error fetching participants:", err);
           setParticipants(["User 1", "User 2"]);
-          console.log("No participants found, using defaults");
         }
         
         // Initialize media

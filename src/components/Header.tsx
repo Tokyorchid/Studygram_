@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { NavigationMenu, NavigationMenuItem, NavigationMenuList } from "@/components/ui/navigation-menu";
 import { Home, BookOpen, MessageSquare, User, Sun, Moon } from "lucide-react";
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, getProfile, updateProfile } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import LogoComponent from "./navigation/LogoComponent";
 
@@ -15,11 +15,7 @@ const Header = () => {
     const loadUserTheme = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('theme')
-          .eq('id', user.id)
-          .single();
+        const profile = await getProfile(user.id);
         
         if (profile?.theme) {
           setTheme(profile.theme as "light" | "dark");
@@ -35,10 +31,7 @@ const Header = () => {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (user) {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ theme: newTheme })
-        .eq('id', user.id);
+      const { error } = await updateProfile(user.id, { theme: newTheme });
 
       if (!error) {
         setTheme(newTheme);
@@ -46,6 +39,12 @@ const Header = () => {
         toast({
           title: "Theme Updated ✨",
           description: `Switched to ${newTheme} mode`,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
         });
       }
     }

@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,7 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Palette } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, getProfile, updateProfile } from "@/integrations/supabase/client";
 
 const themes = [
   { name: "Calming", value: "calming" },
@@ -27,15 +28,11 @@ export function ThemeSelector() {
   const getInitialTheme = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const { data } = await supabase
-        .from("profiles")
-        .select("theme")
-        .eq("id", user.id)
-        .single();
+      const profile = await getProfile(user.id);
       
-      if (data?.theme) {
-        setCurrentTheme(data.theme);
-        applyTheme(data.theme);
+      if (profile?.theme) {
+        setCurrentTheme(profile.theme);
+        applyTheme(profile.theme);
       }
     }
   };
@@ -69,10 +66,7 @@ export function ThemeSelector() {
   const updateTheme = async (theme: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ theme })
-        .eq("id", user.id);
+      const { error } = await updateProfile(user.id, { theme });
 
       if (!error) {
         setCurrentTheme(theme);
@@ -80,6 +74,12 @@ export function ThemeSelector() {
         toast({
           title: "Theme Updated ✨",
           description: `Your theme has been changed to ${theme}`,
+        });
+      } else {
+        toast({
+          title: "Update failed",
+          description: error.message,
+          variant: "destructive",
         });
       }
     }

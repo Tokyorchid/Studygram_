@@ -1,4 +1,3 @@
-
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   BarChart3, BookOpen, Home, MessageSquare, Settings, 
@@ -6,7 +5,7 @@ import {
 } from "lucide-react";
 import NavItem from "./NavItem";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, getProfile, updateProfile } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 
@@ -25,14 +24,10 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { data } = await supabase
-            .from("profiles")
-            .select("theme")
-            .eq("id", user.id)
-            .single();
+          const profile = await getProfile(user.id);
           
-          if (data && data.theme) {
-            setTheme(data.theme);
+          if (profile?.theme) {
+            setTheme(profile.theme);
           }
         }
       } catch (error) {
@@ -49,10 +44,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No user found");
 
-      const { error } = await supabase
-        .from("profiles")
-        .update({ theme: newTheme })
-        .eq("id", user.id);
+      const { error } = await updateProfile(user.id, { theme: newTheme });
 
       if (error) throw error;
 

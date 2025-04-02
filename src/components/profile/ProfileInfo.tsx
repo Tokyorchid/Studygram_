@@ -1,11 +1,10 @@
-
 import { useRef } from "react";
 import { Camera, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, updateProfile } from "@/integrations/supabase/client";
 
 interface ProfileData {
   username: string | null;
@@ -52,12 +51,9 @@ export const ProfileInfo = ({
         .from('user-content')
         .getPublicUrl(filePath);
 
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: publicUrl })
-        .eq('id', user.id);
+      const { error } = await updateProfile(user.id, { avatar_url: publicUrl });
 
-      if (updateError) throw updateError;
+      if (error) throw error;
 
       await onProfileUpdate();
       
@@ -79,20 +75,17 @@ export const ProfileInfo = ({
     if (file) await uploadAvatar(file);
   };
 
-  const updateProfile = async (e: React.FormEvent) => {
+  const updateUserProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Please login first!");
 
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          username: profile.username,
-          full_name: profile.full_name,
-          bio: profile.bio,
-        })
-        .eq('id', user.id);
+      const { error } = await updateProfile(user.id, {
+        username: profile.username,
+        full_name: profile.full_name,
+        bio: profile.bio,
+      });
 
       if (error) throw error;
 
@@ -144,7 +137,7 @@ export const ProfileInfo = ({
 
         <div className="flex-1 space-y-2">
           {editMode ? (
-            <form onSubmit={updateProfile} className="space-y-4">
+            <form onSubmit={updateUserProfile} className="space-y-4">
               <Input
                 value={profile.username || ""}
                 onChange={(e) => onProfileChange({ username: e.target.value })}

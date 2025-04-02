@@ -14,14 +14,66 @@ export const supabase = createClient<Database>(
     realtime: {
       params: {
         eventsPerSecond: 30,  // Increased for better responsiveness
-        transport: 'websocket'
       },
-      config: {
-        heartbeatIntervalMs: 15000
-      }
     }
   }
 );
+
+// Helper functions to handle potential errors when querying Supabase
+export function isError(data: any): boolean {
+  return data && typeof data === 'object' && 'error' in data;
+}
+
+export function handleSingleResult<T>(result: T | { error: any }): T | null {
+  if (isError(result)) {
+    console.error("Database error:", result);
+    return null;
+  }
+  return result as T;
+}
+
+export function handleArrayResult<T>(result: T[] | { error: any }): T[] {
+  if (isError(result)) {
+    console.error("Database error:", result);
+    return [];
+  }
+  return result as T[];
+}
+
+// Helper functions for common operations to ensure proper typing
+export async function getProfile(userId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId as any)
+      .single();
+    
+    if (error) {
+      console.error("Error fetching profile:", error);
+      return null;
+    }
+    
+    return data;
+  } catch (err) {
+    console.error("Unexpected error fetching profile:", err);
+    return null;
+  }
+}
+
+export async function updateProfile(userId: string, updates: any) {
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .update(updates as any)
+      .eq('id', userId as any);
+    
+    return { error };
+  } catch (err: any) {
+    console.error("Unexpected error updating profile:", err);
+    return { error: { message: err.message || "Failed to update profile" } };
+  }
+}
 
 // Workaround for custom tables without modifying SupabaseClientOptions
 declare module '@supabase/supabase-js' {
