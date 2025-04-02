@@ -35,23 +35,26 @@ const CallControls = ({
   }, [isMuted]);
 
   const toggleMute = () => {
-    setIsMuted(!isMuted);
+    const newMuted = !isMuted;
+    setIsMuted(newMuted);
     if (onToggleMute) {
-      onToggleMute(!isMuted);
+      onToggleMute(newMuted);
     }
   };
   
   const toggleVideo = () => {
-    setIsVideoOn(!isVideoOn);
+    const newVideoState = !isVideoOn;
+    setIsVideoOn(newVideoState);
     if (onToggleVideo) {
-      onToggleVideo(!isVideoOn);
+      onToggleVideo(!newVideoState);
     }
   };
   
   const toggleScreenShare = () => {
-    setIsScreenSharing(!isScreenSharing);
+    const newScreenShareState = !isScreenSharing;
+    setIsScreenSharing(newScreenShareState);
     if (onToggleScreenShare) {
-      onToggleScreenShare(!isScreenSharing);
+      onToggleScreenShare(newScreenShareState);
     }
   };
   

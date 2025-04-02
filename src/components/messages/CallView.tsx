@@ -15,11 +15,14 @@ interface CallViewProps {
   toggleChat: () => void;
 }
 
-// Configuration for WebRTC
+// Improved configuration for WebRTC with additional STUN/TURN servers
 const configuration = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' }
   ]
 };
 
@@ -40,23 +43,95 @@ const CallView = ({
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const screenShareRef = useRef<HTMLVideoElement>(null);
   const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map());
+  const signalChannelRef = useRef<any>(null);
+  const userIdRef = useRef<string | null>(null);
   const { toast } = useToast();
 
-  // Function to create a channel for WebRTC signaling
-  const createSignalingChannel = (sessionId: string) => {
-    return supabase.channel(`call:${sessionId}`, {
+  // Set up the WebRTC signaling channel using Supabase Realtime
+  const setupSignalingChannel = (sessionId: string) => {
+    console.log("Setting up signaling channel for session:", sessionId);
+    
+    const channel = supabase.channel(`call:${sessionId}`, {
       config: {
         broadcast: {
           self: false
         }
       }
     });
+
+    // Listen for various signaling events
+    channel
+      .on('broadcast', { event: 'offer' }, async ({ payload, sender }) => {
+        console.log("Received offer from:", sender, payload);
+        if (sender !== userIdRef.current) {
+          await handleOffer(payload, sender);
+        }
+      })
+      .on('broadcast', { event: 'answer' }, async ({ payload, sender }) => {
+        console.log("Received answer from:", sender, payload);
+        if (sender !== userIdRef.current) {
+          await handleAnswer(payload, sender);
+        }
+      })
+      .on('broadcast', { event: 'ice-candidate' }, async ({ payload, sender }) => {
+        console.log("Received ICE candidate from:", sender);
+        if (sender !== userIdRef.current) {
+          await handleIceCandidate(payload, sender);
+        }
+      })
+      .on('broadcast', { event: 'user-joined' }, ({ payload }) => {
+        console.log("User joined:", payload.userId);
+        // If we're already in the call, send an offer to the new user
+        if (localStream && payload.userId !== userIdRef.current) {
+          createPeerConnection(payload.userId, localStream);
+        }
+      })
+      .on('broadcast', { event: 'user-left' }, ({ payload }) => {
+        console.log("User left:", payload.userId);
+        // Clean up the connection to the user who left
+        const peerConnection = peerConnectionsRef.current.get(payload.userId);
+        if (peerConnection) {
+          peerConnection.close();
+          peerConnectionsRef.current.delete(payload.userId);
+        }
+        
+        // Remove their stream
+        setRemoteStreams(prev => {
+          const newStreams = new Map(prev);
+          newStreams.delete(payload.userId);
+          return newStreams;
+        });
+      });
+    
+    // Subscribe to the channel
+    channel.subscribe((status) => {
+      console.log(`Channel status: ${status}`);
+      if (status === 'SUBSCRIBED') {
+        // Announce our presence when we join
+        channel.send({
+          type: 'broadcast',
+          event: 'user-joined',
+          payload: { userId: userIdRef.current }
+        });
+      }
+    });
+    
+    return channel;
   };
 
   // Initialize call setup on component mount
   useEffect(() => {
     const initializeCall = async () => {
       try {
+        console.log("Initializing call for session:", activeChat);
+        
+        // Get current user ID
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          throw new Error("Not authenticated");
+        }
+        userIdRef.current = user.id;
+        
         // Get participant info from the session
         const { data: sessionParticipants } = await supabase
           .from('session_participants')
@@ -79,41 +154,21 @@ const CallView = ({
           setParticipants(["User 1", "User 2", "User 3"]);
         }
 
+        // Set up signaling channel
+        const channel = setupSignalingChannel(activeChat);
+        signalChannelRef.current = channel;
+
         // Initialize media for video calls
         if (isVideoCall) {
           await initializeUserMedia();
         }
-
-        // Setup real-time connection for WebRTC signaling
-        const channel = createSignalingChannel(activeChat);
-        
-        // Handle incoming offers
-        channel.on('broadcast', { event: 'offer' }, async (payload) => {
-          console.log('Received offer:', payload);
-          await handleOffer(payload.payload, payload.sender);
-        });
-        
-        // Handle incoming answers
-        channel.on('broadcast', { event: 'answer' }, async (payload) => {
-          console.log('Received answer:', payload);
-          await handleAnswer(payload.payload, payload.sender);
-        });
-        
-        // Handle ICE candidates
-        channel.on('broadcast', { event: 'ice-candidate' }, async (payload) => {
-          console.log('Received ICE candidate:', payload);
-          await handleIceCandidate(payload.payload, payload.sender);
-        });
-        
-        // Subscribe to the channel
-        channel.subscribe();
 
         // Hide study tip after 10 seconds
         const timer = setTimeout(() => {
           setShowTip(false);
         }, 10000);
 
-        // Clean up
+        // Clean up on unmount
         return () => {
           clearTimeout(timer);
           if (localStream) {
@@ -125,7 +180,15 @@ const CallView = ({
             peerConnection.close();
           });
           
-          channel.unsubscribe();
+          // Announce that we're leaving
+          if (channel && userIdRef.current) {
+            channel.send({
+              type: 'broadcast',
+              event: 'user-left',
+              payload: { userId: userIdRef.current }
+            });
+            channel.unsubscribe();
+          }
         };
       } catch (error) {
         console.error("Error initializing call:", error);
@@ -150,9 +213,13 @@ const CallView = ({
   // Initialize user media (camera and microphone)
   const initializeUserMedia = async () => {
     try {
+      console.log("Initializing user media");
       const mediaConstraints = {
         audio: true,
-        video: isVideoCall
+        video: isVideoCall ? {
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        } : false
       };
       
       const stream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
@@ -164,26 +231,6 @@ const CallView = ({
           ? "Camera and microphone are active" 
           : "Microphone is active",
       });
-
-      // Create peer connections for each participant
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const channel = createSignalingChannel(activeChat);
-        
-        // Get other participants
-        const { data: otherParticipants } = await supabase
-          .from('session_participants')
-          .select('user_id')
-          .eq('session_id', activeChat)
-          .neq('user_id', user.id);
-          
-        if (otherParticipants && otherParticipants.length > 0) {
-          // Create a peer connection for each participant
-          for (const participant of otherParticipants) {
-            createPeerConnection(participant.user_id, stream, channel);
-          }
-        }
-      }
 
       return stream;
     } catch (error) {
@@ -198,12 +245,10 @@ const CallView = ({
   };
 
   // Create a peer connection for a participant
-  const createPeerConnection = async (
-    participantId: string, 
-    stream: MediaStream, 
-    channel: any
-  ) => {
+  const createPeerConnection = async (participantId: string, stream: MediaStream) => {
     try {
+      console.log("Creating peer connection for:", participantId);
+      
       // Create a new RTCPeerConnection
       const peerConnection = new RTCPeerConnection(configuration);
       
@@ -217,19 +262,30 @@ const CallView = ({
       
       // Handle ICE candidates
       peerConnection.onicecandidate = (event) => {
-        if (event.candidate) {
-          channel.send({
+        if (event.candidate && signalChannelRef.current) {
+          console.log("Sending ICE candidate to:", participantId);
+          signalChannelRef.current.send({
             type: 'broadcast',
             event: 'ice-candidate',
             payload: event.candidate,
-            sender: participantId
+            sender: userIdRef.current
           });
         }
       };
       
+      // Handle connection state changes
+      peerConnection.onconnectionstatechange = () => {
+        console.log(`Connection state with ${participantId}: ${peerConnection.connectionState}`);
+      };
+      
+      // Handle ICE connection state changes
+      peerConnection.oniceconnectionstatechange = () => {
+        console.log(`ICE connection state with ${participantId}: ${peerConnection.iceConnectionState}`);
+      };
+      
       // Handle incoming tracks (remote streams)
       peerConnection.ontrack = (event) => {
-        console.log('Received remote track', event);
+        console.log('Received remote track from:', participantId);
         if (event.streams && event.streams[0]) {
           setRemoteStreams(prev => {
             const newStreams = new Map(prev);
@@ -240,14 +296,18 @@ const CallView = ({
       };
       
       // Create and send an offer
-      const offer = await peerConnection.createOffer();
+      const offer = await peerConnection.createOffer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: isVideoCall
+      });
       await peerConnection.setLocalDescription(offer);
       
-      channel.send({
+      console.log("Sending offer to:", participantId);
+      signalChannelRef.current.send({
         type: 'broadcast',
         event: 'offer',
         payload: offer,
-        sender: participantId
+        sender: userIdRef.current
       });
 
       return peerConnection;
@@ -265,33 +325,41 @@ const CallView = ({
   // Handle an incoming offer
   const handleOffer = async (offer: RTCSessionDescriptionInit, senderId: string) => {
     try {
+      console.log("Handling offer from:", senderId);
+      
       // Create a peer connection if it doesn't exist
-      if (!peerConnectionsRef.current.has(senderId) && localStream) {
-        const channel = createSignalingChannel(activeChat);
-        const peerConnection = new RTCPeerConnection(configuration);
-        
-        // Store the connection
+      let peerConnection = peerConnectionsRef.current.get(senderId);
+      
+      if (!peerConnection) {
+        peerConnection = new RTCPeerConnection(configuration);
         peerConnectionsRef.current.set(senderId, peerConnection);
-        
-        // Add all tracks from the local stream
-        localStream.getTracks().forEach(track => {
-          peerConnection.addTrack(track, localStream);
-        });
         
         // Handle ICE candidates
         peerConnection.onicecandidate = (event) => {
-          if (event.candidate) {
-            channel.send({
+          if (event.candidate && signalChannelRef.current) {
+            console.log("Sending ICE candidate to:", senderId);
+            signalChannelRef.current.send({
               type: 'broadcast',
               event: 'ice-candidate',
               payload: event.candidate,
-              sender: senderId
+              sender: userIdRef.current
             });
           }
         };
         
+        // Handle connection state changes
+        peerConnection.onconnectionstatechange = () => {
+          console.log(`Connection state with ${senderId}: ${peerConnection.connectionState}`);
+        };
+        
+        // Handle ICE connection state changes
+        peerConnection.oniceconnectionstatechange = () => {
+          console.log(`ICE connection state with ${senderId}: ${peerConnection.iceConnectionState}`);
+        };
+        
         // Handle incoming tracks
         peerConnection.ontrack = (event) => {
+          console.log('Received remote track from:', senderId);
           if (event.streams && event.streams[0]) {
             setRemoteStreams(prev => {
               const newStreams = new Map(prev);
@@ -301,20 +369,36 @@ const CallView = ({
           }
         };
         
-        // Set the remote description (the offer)
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-        
-        // Create and send an answer
-        const answer = await peerConnection.createAnswer();
-        await peerConnection.setLocalDescription(answer);
-        
-        channel.send({
-          type: 'broadcast',
-          event: 'answer',
-          payload: answer,
-          sender: senderId
-        });
+        // Add all tracks from the local stream if available
+        if (localStream) {
+          localStream.getTracks().forEach(track => {
+            peerConnection.addTrack(track, localStream);
+          });
+        } else {
+          // If local stream isn't ready yet, initialize it
+          const stream = await initializeUserMedia();
+          if (stream) {
+            stream.getTracks().forEach(track => {
+              peerConnection.addTrack(track, stream);
+            });
+          }
+        }
       }
+      
+      // Set the remote description (the offer)
+      await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+      
+      // Create and send an answer
+      const answer = await peerConnection.createAnswer();
+      await peerConnection.setLocalDescription(answer);
+      
+      console.log("Sending answer to:", senderId);
+      signalChannelRef.current.send({
+        type: 'broadcast',
+        event: 'answer',
+        payload: answer,
+        sender: userIdRef.current
+      });
     } catch (error) {
       console.error("Error handling offer:", error);
     }
@@ -323,9 +407,11 @@ const CallView = ({
   // Handle an incoming answer
   const handleAnswer = async (answer: RTCSessionDescriptionInit, senderId: string) => {
     try {
+      console.log("Handling answer from:", senderId);
       const peerConnection = peerConnectionsRef.current.get(senderId);
-      if (peerConnection) {
+      if (peerConnection && peerConnection.signalingState !== 'stable') {
         await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+        console.log("Remote description set successfully for:", senderId);
       }
     } catch (error) {
       console.error("Error handling answer:", error);
@@ -335,9 +421,11 @@ const CallView = ({
   // Handle an incoming ICE candidate
   const handleIceCandidate = async (candidate: RTCIceCandidateInit, senderId: string) => {
     try {
+      console.log("Handling ICE candidate from:", senderId);
       const peerConnection = peerConnectionsRef.current.get(senderId);
       if (peerConnection) {
         await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+        console.log("ICE candidate added successfully for:", senderId);
       }
     } catch (error) {
       console.error("Error handling ICE candidate:", error);
@@ -385,12 +473,13 @@ const CallView = ({
         }
         
         // Share the screen with all peers
-        peerConnectionsRef.current.forEach(peerConnection => {
+        peerConnectionsRef.current.forEach((peerConnection, participantId) => {
           const sender = peerConnection.getSenders().find(s => 
             s.track?.kind === 'video'
           );
           
           if (sender) {
+            console.log("Replacing video track with screen share for:", participantId);
             sender.replaceTrack(screenStream.getVideoTracks()[0]);
           }
         });
