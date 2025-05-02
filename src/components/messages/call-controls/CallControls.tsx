@@ -40,6 +40,7 @@ const CallControls = ({
     setIsMuted(newMuted);
     if (onToggleMute) {
       onToggleMute(newMuted);
+    } else {
       toast(newMuted ? "Microphone muted" : "Microphone unmuted");
     }
   };
@@ -49,6 +50,7 @@ const CallControls = ({
     setIsVideoOn(newVideoState);
     if (onToggleVideo) {
       onToggleVideo(!newVideoState);
+    } else {
       toast(newVideoState ? "Camera turned on" : "Camera turned off");
     }
   };
@@ -58,6 +60,7 @@ const CallControls = ({
     setIsScreenSharing(newScreenShareState);
     if (onToggleScreenShare) {
       onToggleScreenShare(newScreenShareState);
+    } else {
       toast(newScreenShareState ? "Screen sharing started" : "Screen sharing stopped");
     }
   };
@@ -65,6 +68,7 @@ const CallControls = ({
   const toggleEnhancedMode = () => {
     setIsEnhancedMode(!isEnhancedMode);
     setShowSettings(!showSettings);
+    toast(isEnhancedMode ? "Standard mode active" : "Enhanced learning mode active");
   };
 
   return (

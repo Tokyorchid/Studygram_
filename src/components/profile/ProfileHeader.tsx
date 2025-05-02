@@ -15,8 +15,12 @@ export const ProfileHeader = ({ headerUrl, onProfileUpdate }: ProfileHeaderProps
 
   const uploadHeader = async (file: File) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Please login first!");
+      const { data } = await supabase.auth.getUser();
+      const user = data?.user;
+      
+      if (!user) {
+        throw new Error("Please login first!");
+      }
 
       const fileExt = file.name.split('.').pop();
       const filePath = `${user.id}/header_${Math.random()}.${fileExt}`;
