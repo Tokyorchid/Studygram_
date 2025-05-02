@@ -19,17 +19,34 @@ export const supabase = createClient<Database>(
   }
 );
 
-// Type-safe helper functions for querying Supabase
+// Helper functions to handle potential errors when querying Supabase
 export function isError(data: any): boolean {
   return data && typeof data === 'object' && 'error' in data;
 }
 
+export function handleSingleResult<T>(result: T | { error: any }): T | null {
+  if (isError(result)) {
+    console.error("Database error:", result);
+    return null;
+  }
+  return result as T;
+}
+
+export function handleArrayResult<T>(result: T[] | { error: any }): T[] {
+  if (isError(result)) {
+    console.error("Database error:", result);
+    return [];
+  }
+  return result as T[];
+}
+
+// Helper functions for common operations to ensure proper typing
 export async function getProfile(userId: string) {
   try {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', userId)
+      .eq('id', userId as any)
       .single();
     
     if (error) {
@@ -48,8 +65,8 @@ export async function updateProfile(userId: string, updates: any) {
   try {
     const { error } = await supabase
       .from('profiles')
-      .update(updates)
-      .eq('id', userId);
+      .update(updates as any)
+      .eq('id', userId as any);
     
     return { error };
   } catch (err: any) {
@@ -58,40 +75,11 @@ export async function updateProfile(userId: string, updates: any) {
   }
 }
 
-// Helper functions to handle potential errors when querying Supabase
-export function handleSingleResult<T>(result: T | { error: any }): T | null {
-  if (isError(result)) {
-    console.error("Database error:", result);
-    return null;
+// Workaround for custom tables without modifying SupabaseClientOptions
+declare module '@supabase/supabase-js' {
+  interface PostgrestQueryBuilder<Schema> {
+    table<TableName extends string>(
+      tableName: TableName
+    ): PostgrestQueryBuilder<Schema>;
   }
-  return result as T;
-}
-
-export function handleArrayResult<T>(result: T[] | { error: any }): T[] {
-  if (isError(result)) {
-    console.error("Database error:", result);
-    return [];
-  }
-  return result as T[];
-}
-
-// Advanced error handling for complex queries
-export function assertType<T>(data: any, errorMsg?: string): T {
-  if (!data || isError(data)) {
-    console.error(errorMsg || "Type assertion failed", data);
-    throw new Error(errorMsg || "Failed to assert type");
-  }
-  return data as T;
-}
-
-// Type-safe channel helpers for WebRTC
-export function createSignalingChannel(channelName: string) {
-  return supabase.channel(channelName, {
-    config: {
-      broadcast: { self: true },
-      presence: {
-        key: '',
-      },
-    }
-  });
 }

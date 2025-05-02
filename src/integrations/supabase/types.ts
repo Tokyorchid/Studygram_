@@ -45,21 +45,6 @@ export type Database = {
         }
         Relationships: []
       }
-      instructors: {
-        Row: {
-          instructor_id: string
-          instructor_name: string | null
-        }
-        Insert: {
-          instructor_id: string
-          instructor_name?: string | null
-        }
-        Update: {
-          instructor_id?: string
-          instructor_name?: string | null
-        }
-        Relationships: []
-      }
       posts: {
         Row: {
           available_from: string
@@ -200,13 +185,6 @@ export type Database = {
             foreignKeyName: "squad_members_squad_id_fkey"
             columns: ["squad_id"]
             isOneToOne: false
-            referencedRelation: "active_study_squads"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "squad_members_squad_id_fkey"
-            columns: ["squad_id"]
-            isOneToOne: false
             referencedRelation: "study_squads"
             referencedColumns: ["id"]
           },
@@ -218,21 +196,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      squads: {
-        Row: {
-          squad_id: string
-          squad_name: string | null
-        }
-        Insert: {
-          squad_id: string
-          squad_name?: string | null
-        }
-        Update: {
-          squad_id?: string
-          squad_name?: string | null
-        }
-        Relationships: []
       }
       study_posts: {
         Row: {
@@ -270,40 +233,43 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string
+          description: string | null
           end_time: string
           id: string
-          instructor_id: string | null
           metadata: Json | null
           session_type: string
           squad_id: string | null
           start_time: string
-          title_id: string | null
+          subject: string
+          title: string
           vibe_settings: Json | null
         }
         Insert: {
           created_at?: string
           created_by: string
+          description?: string | null
           end_time: string
           id?: string
-          instructor_id?: string | null
           metadata?: Json | null
           session_type?: string
           squad_id?: string | null
           start_time: string
-          title_id?: string | null
+          subject: string
+          title: string
           vibe_settings?: Json | null
         }
         Update: {
           created_at?: string
           created_by?: string
+          description?: string | null
           end_time?: string
           id?: string
-          instructor_id?: string | null
           metadata?: Json | null
           session_type?: string
           squad_id?: string | null
           start_time?: string
-          title_id?: string | null
+          subject?: string
+          title?: string
           vibe_settings?: Json | null
         }
         Relationships: [
@@ -312,13 +278,6 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "study_sessions_squad_id_fkey"
-            columns: ["squad_id"]
-            isOneToOne: false
-            referencedRelation: "active_study_squads"
             referencedColumns: ["id"]
           },
           {
@@ -365,66 +324,6 @@ export type Database = {
           },
         ]
       }
-      subject_sessions: {
-        Row: {
-          session_id: string
-          subject_id: string | null
-        }
-        Insert: {
-          session_id: string
-          subject_id?: string | null
-        }
-        Update: {
-          session_id?: string
-          subject_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "subject_sessions_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: true
-            referencedRelation: "study_sessions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "subject_sessions_subject_id_fkey"
-            columns: ["subject_id"]
-            isOneToOne: false
-            referencedRelation: "subjects"
-            referencedColumns: ["subject_id"]
-          },
-        ]
-      }
-      subjects: {
-        Row: {
-          subject_id: string
-          subject_name: string
-        }
-        Insert: {
-          subject_id: string
-          subject_name: string
-        }
-        Update: {
-          subject_id?: string
-          subject_name?: string
-        }
-        Relationships: []
-      }
-      titles: {
-        Row: {
-          title_id: string
-          title_name: string
-        }
-        Insert: {
-          title_id: string
-          title_name: string
-        }
-        Update: {
-          title_id?: string
-          title_name?: string
-        }
-        Relationships: []
-      }
       user_follows: {
         Row: {
           created_at: string
@@ -446,91 +345,9 @@ export type Database = {
         }
         Relationships: []
       }
-      user_profiles_1nf: {
-        Row: {
-          id: string
-          skills: string | null
-          username: string | null
-        }
-        Insert: {
-          id: string
-          skills?: string | null
-          username?: string | null
-        }
-        Update: {
-          id?: string
-          skills?: string | null
-          username?: string | null
-        }
-        Relationships: []
-      }
-      users: {
-        Row: {
-          user_id: string
-          user_name: string | null
-        }
-        Insert: {
-          user_id: string
-          user_name?: string | null
-        }
-        Update: {
-          user_id?: string
-          user_name?: string | null
-        }
-        Relationships: []
-      }
     }
     Views: {
-      active_study_squads: {
-        Row: {
-          active: boolean | null
-          created_at: string | null
-          created_by: string | null
-          description: string | null
-          id: string | null
-          name: string | null
-        }
-        Insert: {
-          active?: boolean | null
-          created_at?: string | null
-          created_by?: string | null
-          description?: string | null
-          id?: string | null
-          name?: string | null
-        }
-        Update: {
-          active?: boolean | null
-          created_at?: string | null
-          created_by?: string | null
-          description?: string | null
-          id?: string | null
-          name?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "study_squads_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      frequent_posters: {
-        Row: {
-          post_count: number | null
-          user_id: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "study_posts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
       [_ in never]: never
@@ -544,29 +361,27 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, "public">]
+type PublicSchema = Database[Extract<keyof Database, "public">]
 
 export type Tables<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+  PublicTableNameOrOptions extends
+    | keyof (PublicSchema["Tables"] & PublicSchema["Views"])
     | { schema: keyof Database },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
-  }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+        Database[PublicTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+      Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof (PublicSchema["Tables"] &
+        PublicSchema["Views"])
+    ? (PublicSchema["Tables"] &
+        PublicSchema["Views"])[PublicTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -574,22 +389,20 @@ export type Tables<
     : never
 
 export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
+  PublicTableNameOrOptions extends
+    | keyof PublicSchema["Tables"]
     | { schema: keyof Database },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
-  }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -597,22 +410,20 @@ export type TablesInsert<
     : never
 
 export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
+  PublicTableNameOrOptions extends
+    | keyof PublicSchema["Tables"]
     | { schema: keyof Database },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
-  }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -620,23 +431,21 @@ export type TablesUpdate<
     : never
 
 export type Enums<
-  DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
+  PublicEnumNameOrOptions extends
+    | keyof PublicSchema["Enums"]
     | { schema: keyof Database },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
-  }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+  EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+> = PublicEnumNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
+    ? PublicSchema["Enums"][PublicEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
+    | keyof PublicSchema["CompositeTypes"]
     | { schema: keyof Database },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof Database
@@ -645,12 +454,6 @@ export type CompositeTypes<
     : never = never,
 > = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
   ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
+    ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
-
-export const Constants = {
-  public: {
-    Enums: {},
-  },
-} as const
