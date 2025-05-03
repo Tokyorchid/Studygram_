@@ -63,7 +63,10 @@ const ChatSidebar = ({
       if (!user) return;
 
       // Get users I've messaged or who have messaged me
-      const { data: conversations, error } = await supabase.rpc('get_conversations');
+      const { data: conversations, error } = await supabase.rpc('get_conversations') as { 
+        data: Conversation[] | null, 
+        error: any 
+      };
       
       if (error) {
         console.error("Error fetching conversations:", error);
