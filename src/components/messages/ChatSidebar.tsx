@@ -29,6 +29,13 @@ interface DirectChat {
   last_message_time?: string;
 }
 
+// Define a proper type for chat groups
+interface ChatGroup {
+  id: string;
+  name: string;
+  lastMessage?: MessageProps;
+}
+
 const ChatSidebar = ({ 
   activeChat, 
   setActiveChat, 
@@ -100,8 +107,8 @@ const ChatSidebar = ({
     };
   }, []);
   
-  const getFilteredGroups = () => {
-    const allChats = [
+  const getFilteredGroups = (): ChatGroup[] => {
+    const allChats: ChatGroup[] = [
       { id: "study-group-a", name: "Study Group A", lastMessage: messages["study-group-a"]?.slice(-1)[0] },
       { id: "math-squad", name: "Math Squad", lastMessage: messages["math-squad"]?.slice(-1)[0] },
       { id: "science-team", name: "Science Team", lastMessage: messages["science-team"]?.slice(-1)[0] }
@@ -199,6 +206,7 @@ const ChatSidebar = ({
                 time={chat.lastMessage?.time || ""}
                 active={activeChat === chat.id}
                 onClick={() => setActiveChat(chat.id)}
+                avatar=""
               />
             ))}
             
