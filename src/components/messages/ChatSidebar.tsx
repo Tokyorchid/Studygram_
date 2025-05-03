@@ -244,7 +244,7 @@ const ChatSidebar = ({
                 time={chat.last_message_time ? new Date(chat.last_message_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ""}
                 active={false}
                 onClick={() => handleDirectChatClick(chat.user_id)}
-                avatar={chat.avatar_url}
+                avatar={chat.avatar_url || ""}
               />
             ))
           ) : searchQuery ? (
