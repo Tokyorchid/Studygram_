@@ -1,6 +1,7 @@
+
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, extendStudySession, ExtendedStudySession } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Clock, Target, Users, Play, Pause, X, MessageSquare, CheckCircle, Video, Phone } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -47,11 +48,11 @@ const SessionPage = () => {
       const { data, error } = await supabase
         .from('study_sessions')
         .select('*')
-        .eq('id', sessionId)
+        .eq('id', sessionId!)
         .single();
 
       if (error) throw error;
-      return data;
+      return extendStudySession(data);
     },
   });
 
@@ -67,7 +68,7 @@ const SessionPage = () => {
             avatar_url
           )
         `)
-        .eq('session_id', sessionId);
+        .eq('session_id', sessionId!);
 
       if (error) throw error;
       return data;

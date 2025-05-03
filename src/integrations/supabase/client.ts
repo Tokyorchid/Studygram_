@@ -75,6 +75,38 @@ export async function updateProfile(userId: string, updates: any) {
   }
 }
 
+// Helper for study sessions to handle missing fields
+export interface ExtendedStudySession {
+  id: string;
+  created_at: string;
+  created_by: string;
+  end_time: string;
+  start_time: string;
+  session_type: string;
+  title?: string; 
+  subject?: string;
+  description?: string;
+  metadata: any;
+  vibe_settings: any;
+  instructor_id?: string;
+  squad_id?: string;
+  title_id?: string;
+}
+
+export function extendStudySession(session: any): ExtendedStudySession {
+  // Extract title and description from metadata if available
+  const title = session.metadata?.title || 'Untitled Session';
+  const subject = session.metadata?.subject || 'General Study';
+  const description = session.metadata?.description || session.metadata?.goal || '';
+  
+  return {
+    ...session,
+    title,
+    subject,
+    description
+  };
+}
+
 // Workaround for custom tables without modifying SupabaseClientOptions
 declare module '@supabase/supabase-js' {
   interface PostgrestQueryBuilder<Schema> {

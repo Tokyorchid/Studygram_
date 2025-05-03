@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { BookOpen, Clock, Target, Users } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, extendStudySession } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import StudySessionCard from "@/components/StudySessionCard";
 import { useEffect, useState } from "react";
@@ -54,7 +54,8 @@ const StudySessions = () => {
         .gte('end_time', new Date().toISOString());
 
       if (error) throw error;
-      return data;
+      // Process each session to add title, subject, description
+      return data.map(session => extendStudySession(session));
     },
   });
 
@@ -83,7 +84,12 @@ const StudySessions = () => {
       }
 
       // Prepare metadata based on session type
-      let metadata = null;
+      let metadata: any = {
+        title: newSession.title,
+        subject: newSession.subject,
+        description: newSession.description,
+      };
+
       let vibeSettings = null;
 
       if (newSession.sessionType === 'task_based' && newSession.tasks) {
@@ -93,10 +99,10 @@ const StudySessions = () => {
           text: task,
           completed: false
         }));
-        metadata = { tasks: taskItems };
+        metadata.tasks = taskItems;
       }
       else if (newSession.sessionType === 'help_session' && newSession.helpTopic) {
-        metadata = { helpTopic: newSession.helpTopic };
+        metadata.helpTopic = newSession.helpTopic;
       }
       else if (newSession.sessionType === 'vibe_based') {
         vibeSettings = { 
@@ -107,22 +113,19 @@ const StudySessions = () => {
               ? "Chill Study Café"
               : "Sprint Study Mode"
         };
-        metadata = { goal: newSession.description };
+        metadata.goal = newSession.description;
       }
 
       const { error } = await supabase
         .from('study_sessions')
         .insert({
-          title: newSession.title,
-          subject: newSession.subject,
-          description: newSession.description,
           start_time: new Date(newSession.startTime).toISOString(),
           end_time: new Date(newSession.endTime).toISOString(),
           created_by: user.id,
           session_type: newSession.sessionType,
           metadata,
           vibe_settings: vibeSettings
-        });
+        } as any);
 
       if (error) throw error;
 
