@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase, extendStudySession, ExtendedStudySession } from "@/integrations/supabase/client";
@@ -228,7 +227,7 @@ const SessionPage = () => {
   }
 
   const renderSessionContent = () => {
-    switch (session.session_type) {
+    switch (session?.session_type) {
       case 'instant_pod':
         return (
           <div className="space-y-8">
@@ -353,10 +352,10 @@ const SessionPage = () => {
                 <div className="bg-gray-900/70 rounded-xl p-4">
                   <h3 className="font-semibold mb-3 flex items-center">
                     <Users className="mr-2 h-4 w-4" />
-                    Co-Study Members ({participants?.length || 0})
+                    Co-Study Members ({participants.length || 0})
                   </h3>
                   <div className="space-y-3 max-h-60 overflow-auto">
-                    {participants?.map((participant) => (
+                    {participants.length > 0 && participants.map((participant) => (
                       <div key={participant.user_id} className="flex items-center gap-3 p-2 bg-gray-800/50 rounded-lg">
                         <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
                           {participant.profiles?.username?.charAt(0) || '?'}
@@ -369,6 +368,9 @@ const SessionPage = () => {
                         </div>
                       </div>
                     ))}
+                    {participants.length === 0 && (
+                      <div className="text-gray-400 text-sm">No other participants yet</div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -457,10 +459,10 @@ const SessionPage = () => {
                   <div className="bg-gray-900/70 rounded-xl p-4 mb-4">
                     <h3 className="font-semibold mb-3 flex items-center">
                       <Users className="mr-2 h-4 w-4" />
-                      Participants ({participants?.length || 0})
+                      Participants ({participants.length || 0})
                     </h3>
                     <div className="space-y-3 max-h-40 overflow-auto">
-                      {participants?.map((participant) => (
+                      {participants.length > 0 && participants.map((participant) => (
                         <div key={participant.user_id} className="flex items-center gap-3 p-2 bg-gray-800/50 rounded-lg">
                           <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
                             {participant.profiles?.username?.charAt(0) || '?'}
@@ -473,6 +475,9 @@ const SessionPage = () => {
                           </div>
                         </div>
                       ))}
+                      {participants.length === 0 && (
+                        <div className="text-gray-400 text-sm">No participants yet</div>
+                      )}
                     </div>
                   </div>
                   
@@ -521,7 +526,7 @@ const SessionPage = () => {
         );
         
       case 'help_session':
-        const helpMetadata = session.metadata as SessionMetadata;
+        const helpMetadata = session?.metadata as SessionMetadata;
         return (
           <div className="space-y-8">
             <div className="bg-gray-900/50 rounded-xl p-6">
@@ -561,10 +566,10 @@ const SessionPage = () => {
                   <div className="bg-gray-900/70 rounded-xl p-4">
                     <h3 className="font-semibold mb-3 flex items-center">
                       <Users className="mr-2 h-4 w-4" />
-                      Participants ({participants?.length || 0})
+                      Participants ({participants.length || 0})
                     </h3>
                     <div className="space-y-3 max-h-40 overflow-auto">
-                      {participants?.map((participant) => (
+                      {participants.length > 0 && participants.map((participant) => (
                         <div key={participant.user_id} className="flex items-center gap-3 p-2 bg-gray-800/50 rounded-lg">
                           <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
                             {participant.profiles?.username?.charAt(0) || '?'}
@@ -572,6 +577,9 @@ const SessionPage = () => {
                           <span className="text-sm">{participant.profiles?.username || 'Anonymous'}</span>
                         </div>
                       ))}
+                      {participants.length === 0 && (
+                        <div className="text-gray-400 text-sm">No participants yet</div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -601,7 +609,7 @@ const SessionPage = () => {
         );
         
       case 'vibe_based':
-        const vibeSettings = session.vibe_settings as VibeSettings;
+        const vibeSettings = session?.vibe_settings as VibeSettings;
         const vibeTheme = vibeSettings?.theme || 'deep_focus';
         const vibeColors = {
           deep_focus: 'from-blue-900 to-indigo-900',
@@ -654,10 +662,10 @@ const SessionPage = () => {
                 <div className="bg-black/30 backdrop-blur-sm rounded-xl p-4">
                   <h3 className="font-semibold mb-3 flex items-center">
                     <Users className="mr-2 h-4 w-4" />
-                    Vibe Buddies ({participants?.length || 0})
+                    Vibe Buddies ({participants.length || 0})
                   </h3>
                   <div className="space-y-3 max-h-60 overflow-auto">
-                    {participants?.map((participant) => (
+                    {participants.length > 0 && participants.map((participant) => (
                       <div key={participant.user_id} className="flex items-center gap-3 p-2 bg-black/30 rounded-lg">
                         <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
                           {participant.profiles?.username?.charAt(0) || '?'}
@@ -670,6 +678,9 @@ const SessionPage = () => {
                         </div>
                       </div>
                     ))}
+                    {participants.length === 0 && (
+                      <div className="text-gray-400 text-sm">No vibe buddies yet</div>
+                    )}
                   </div>
                 </div>
               </div>

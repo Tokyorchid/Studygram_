@@ -37,6 +37,10 @@ export function handleArrayResult<T>(result: T[] | { error: any }): T[] {
     console.error("Database error:", result);
     return [];
   }
+  if (!Array.isArray(result)) {
+    console.error("Expected array result but got:", result);
+    return [];
+  }
   return result as T[];
 }
 
