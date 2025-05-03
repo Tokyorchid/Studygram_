@@ -35,12 +35,12 @@ const Messages = () => {
     ],
     "math-squad": [
       { id: '1', sender: 'Alex', content: 'Did anyone start the calculus assignment yet?', time: '9:15 AM', avatar: '' },
-      { id: '2', sender: 'Jordan', content: 'I'm halfway through. The integrals are tricky!', time: '9:20 AM', avatar: '' },
+      { id: '2', sender: 'Jordan', content: "I'm halfway through. The integrals are tricky!", time: '9:20 AM', avatar: '' },
     ],
     "science-team": [
       { id: '1', sender: 'Robin', content: 'Lab report due tomorrow - who needs help?', time: '2:45 PM', avatar: '' },
       { id: '2', sender: 'Casey', content: 'Me! Still working on the discussion section', time: '2:50 PM', avatar: '' },
-      { id: '3', sender: 'Robin', content: 'Let's have a quick call in 15 minutes?', time: '2:52 PM', avatar: '' },
+      { id: '3', sender: 'Robin', content: "Let's have a quick call in 15 minutes?", time: '2:52 PM', avatar: '' },
     ]
   });
 
