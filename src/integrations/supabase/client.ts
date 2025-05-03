@@ -79,6 +79,147 @@ export async function updateProfile(userId: string, updates: any) {
   }
 }
 
+// Social features helpers
+export async function followUser(userId: string) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return { error: { message: "You must be logged in to follow users" } };
+    }
+    
+    const { error } = await supabase
+      .from('user_follows')
+      .insert({
+        follower_id: user.id,
+        following_id: userId
+      });
+    
+    return { error };
+  } catch (err: any) {
+    console.error("Error following user:", err);
+    return { error: { message: err.message || "Failed to follow user" } };
+  }
+}
+
+export async function unfollowUser(userId: string) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return { error: { message: "You must be logged in to unfollow users" } };
+    }
+    
+    const { error } = await supabase
+      .from('user_follows')
+      .delete()
+      .eq('follower_id', user.id)
+      .eq('following_id', userId);
+    
+    return { error };
+  } catch (err: any) {
+    console.error("Error unfollowing user:", err);
+    return { error: { message: err.message || "Failed to unfollow user" } };
+  }
+}
+
+export async function isFollowing(userId: string): Promise<boolean> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) return false;
+    
+    const { data, error } = await supabase
+      .from('user_follows')
+      .select('*')
+      .eq('follower_id', user.id)
+      .eq('following_id', userId)
+      .single();
+    
+    if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned" error
+      console.error("Error checking follow status:", error);
+      return false;
+    }
+    
+    return !!data;
+  } catch (err) {
+    console.error("Error checking follow status:", err);
+    return false;
+  }
+}
+
+export async function sendDirectMessage(recipientId: string, content: string) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return { error: { message: "You must be logged in to send messages" } };
+    }
+    
+    const { error } = await supabase
+      .from('direct_messages')
+      .insert({
+        sender_id: user.id,
+        recipient_id: recipientId,
+        content: content,
+        is_read: false
+      });
+    
+    return { error };
+  } catch (err: any) {
+    console.error("Error sending message:", err);
+    return { error: { message: err.message || "Failed to send message" } };
+  }
+}
+
+export async function getDirectMessages(otherUserId: string) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return [];
+    }
+    
+    const { data, error } = await supabase
+      .from('direct_messages')
+      .select('*')
+      .or(`and(sender_id.eq.${user.id},recipient_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},recipient_id.eq.${user.id})`)
+      .order('created_at', { ascending: true });
+    
+    if (error) {
+      console.error("Error fetching messages:", error);
+      return [];
+    }
+    
+    return data;
+  } catch (err) {
+    console.error("Error fetching messages:", err);
+    return [];
+  }
+}
+
+export async function searchProfiles(query: string) {
+  try {
+    if (!query.trim()) return [];
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, username, full_name, avatar_url')
+      .or(`username.ilike.%${query}%,full_name.ilike.%${query}%`)
+      .limit(10);
+    
+    if (error) {
+      console.error("Error searching profiles:", error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (err) {
+    console.error("Error searching profiles:", err);
+    return [];
+  }
+}
+
 // Helper for study sessions to handle missing fields
 export interface ExtendedStudySession {
   id: string;

@@ -1,16 +1,19 @@
-import { useRef } from "react";
-import { Camera, User } from "lucide-react";
+
+import { useRef, useState, useEffect } from "react";
+import { Camera, User, MessageSquare, UserPlus, UserCheck, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { supabase, updateProfile } from "@/integrations/supabase/client";
+import { supabase, updateProfile, followUser, unfollowUser, isFollowing } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 interface ProfileData {
   username: string | null;
   full_name: string | null;
   bio: string | null;
   avatar_url: string | null;
+  id?: string;
 }
 
 interface ProfileInfoProps {
@@ -32,6 +35,64 @@ export const ProfileInfo = ({
 }: ProfileInfoProps) => {
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const [isCurrentUser, setIsCurrentUser] = useState(true);
+  const [isFollowingUser, setIsFollowingUser] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+
+  // Check if this is the current user's profile or someone else's
+  useEffect(() => {
+    const checkCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && profile.id) {
+        const isCurrent = user.id === profile.id;
+        setIsCurrentUser(isCurrent);
+
+        // If not current user, check if following
+        if (!isCurrent) {
+          const following = await isFollowing(profile.id);
+          setIsFollowingUser(following);
+        }
+      }
+    };
+    
+    checkCurrentUser();
+  }, [profile.id]);
+
+  // Fetch followers and following counts
+  useEffect(() => {
+    const fetchFollowCounts = async () => {
+      if (!profile.id) return;
+
+      try {
+        // Get followers count
+        const { data: followers, error: followersError } = await supabase
+          .from('user_follows')
+          .select('follower_id')
+          .eq('following_id', profile.id);
+        
+        if (!followersError) {
+          setFollowersCount(followers?.length || 0);
+        }
+
+        // Get following count
+        const { data: following, error: followingError } = await supabase
+          .from('user_follows')
+          .select('following_id')
+          .eq('follower_id', profile.id);
+        
+        if (!followingError) {
+          setFollowingCount(following?.length || 0);
+        }
+      } catch (error) {
+        console.error("Error fetching follow counts:", error);
+      }
+    };
+
+    fetchFollowCounts();
+  }, [profile.id, isFollowingUser]);
 
   const uploadAvatar = async (file: File) => {
     try {
@@ -105,6 +166,37 @@ export const ProfileInfo = ({
     }
   };
 
+  const handleFollowToggle = async () => {
+    if (!profile.id) return;
+    
+    setFollowLoading(true);
+    try {
+      if (isFollowingUser) {
+        // Unfollow
+        const { error } = await unfollowUser(profile.id);
+        if (error) throw error;
+        setIsFollowingUser(false);
+        toast.success("Unfollowed successfully");
+      } else {
+        // Follow
+        const { error } = await followUser(profile.id);
+        if (error) throw error;
+        setIsFollowingUser(true);
+        toast.success("Now following " + (profile.username || "user"));
+      }
+    } catch (error: any) {
+      console.error("Error updating follow status:", error);
+      toast.error(error.message || "Failed to update follow status");
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
+  const handleMessage = () => {
+    if (!profile.id) return;
+    navigate(`/messages?userId=${profile.id}`);
+  };
+
   return (
     <div className="relative -mt-20 mb-8">
       <div className="flex flex-col md:flex-row gap-6 items-start">
@@ -120,12 +212,14 @@ export const ProfileInfo = ({
               <User size={48} className="text-white" />
             )}
           </div>
-          <button 
-            onClick={() => avatarInputRef.current?.click()}
-            className="absolute bottom-0 right-0 bg-purple-500 p-2 rounded-full hover:bg-purple-600 transition-colors"
-          >
-            <Camera className="w-4 h-4 text-white" />
-          </button>
+          {isCurrentUser && (
+            <button 
+              onClick={() => avatarInputRef.current?.click()}
+              className="absolute bottom-0 right-0 bg-purple-500 p-2 rounded-full hover:bg-purple-600 transition-colors"
+            >
+              <Camera className="w-4 h-4 text-white" />
+            </button>
+          )}
           <input
             ref={avatarInputRef}
             type="file"
@@ -170,14 +264,51 @@ export const ProfileInfo = ({
                 {profile.full_name || "Profile Owner"}
               </h1>
               <p className="text-gray-400">@{profile.username || "user"}</p>
+              
+              <div className="flex gap-4 mt-1 text-sm text-gray-300">
+                <span>{followersCount} followers</span>
+                <span>{followingCount} following</span>
+              </div>
+              
               {profile.bio && (
                 <p className="text-white/80 mt-2">{profile.bio}</p>
               )}
-              <div className="flex gap-4 mt-4">
-                <Button onClick={() => onEditModeChange(true)}>Edit Profile</Button>
-                <Button variant="destructive" onClick={onSignOut}>
-                  Sign Out
-                </Button>
+              
+              <div className="flex gap-3 mt-4">
+                {isCurrentUser ? (
+                  <>
+                    <Button onClick={() => onEditModeChange(true)}>Edit Profile</Button>
+                    <Button variant="destructive" onClick={onSignOut}>
+                      Sign Out
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button 
+                      onClick={handleFollowToggle}
+                      disabled={followLoading}
+                      className={isFollowingUser ? "bg-purple-700 hover:bg-purple-800" : ""}
+                    >
+                      {followLoading ? (
+                        <div className="animate-spin h-4 w-4 border-2 border-white rounded-full border-t-transparent" />
+                      ) : isFollowingUser ? (
+                        <>
+                          <UserX className="h-4 w-4 mr-2" />
+                          Unfollow
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="h-4 w-4 mr-2" />
+                          Follow
+                        </>
+                      )}
+                    </Button>
+                    <Button variant="outline" onClick={handleMessage}>
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Message
+                    </Button>
+                  </>
+                )}
               </div>
             </>
           )}

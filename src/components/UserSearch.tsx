@@ -1,13 +1,15 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, User, UserPlus } from "lucide-react";
+import { Search, User, UserPlus, UserCheck, MessageSquare } from "lucide-react";
 import { motion } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, searchProfiles, followUser, unfollowUser, isFollowing } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Profile {
   id: string;
@@ -19,23 +21,28 @@ interface Profile {
 export function UserSearch() {
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
+  const [followStatus, setFollowStatus] = useState<Record<string, boolean>>({});
+  const [loadingFollow, setLoadingFollow] = useState<Record<string, boolean>>({});
 
-  const { data: searchResults, refetch, isLoading } = useQuery({
+  const { data: searchResults, refetch, isLoading, isRefetching } = useQuery({
     queryKey: ["searchUsers", searchTerm],
     queryFn: async () => {
       if (!searchTerm.trim()) return [];
-      
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, username, full_name, avatar_url")
-        .or(`username.ilike.%${searchTerm}%,full_name.ilike.%${searchTerm}%`)
-        .limit(5);
-      
-      if (error) throw error;
-      return data as Profile[];
+      const profiles = await searchProfiles(searchTerm);
+      return profiles;
     },
     enabled: false // We'll trigger this manually
   });
+
+  useEffect(() => {
+    // Check follow status for each user in search results
+    if (searchResults && searchResults.length > 0) {
+      searchResults.forEach(async (profile) => {
+        const following = await isFollowing(profile.id);
+        setFollowStatus(prev => ({ ...prev, [profile.id]: following }));
+      });
+    }
+  }, [searchResults]);
 
   const handleSearch = () => {
     if (searchTerm.trim()) {
@@ -47,15 +54,34 @@ export function UserSearch() {
     navigate(`/profile?id=${userId}`);
   };
 
-  const followUser = async (userId: string) => {
+  const handleFollowUser = async (userId: string) => {
     try {
-      // Here you would implement the follow functionality
-      // which would typically involve adding a record to a follows table
-      toast.success("User followed successfully!");
-    } catch (error) {
-      console.error("Error following user:", error);
-      toast.error("Failed to follow user");
+      setLoadingFollow(prev => ({ ...prev, [userId]: true }));
+      const isCurrentlyFollowing = followStatus[userId];
+      
+      if (isCurrentlyFollowing) {
+        // Unfollow
+        const { error } = await unfollowUser(userId);
+        if (error) throw error;
+        setFollowStatus(prev => ({ ...prev, [userId]: false }));
+        toast.success("Unfollowed successfully");
+      } else {
+        // Follow
+        const { error } = await followUser(userId);
+        if (error) throw error;
+        setFollowStatus(prev => ({ ...prev, [userId]: true }));
+        toast.success("Following user!");
+      }
+    } catch (error: any) {
+      console.error("Error following/unfollowing user:", error);
+      toast.error(error.message || "Failed to update follow status");
+    } finally {
+      setLoadingFollow(prev => ({ ...prev, [userId]: false }));
     }
+  };
+
+  const openMessages = (userId: string) => {
+    navigate(`/messages?userId=${userId}`);
   };
 
   return (
@@ -73,20 +99,34 @@ export function UserSearch() {
         <Button 
           className="bg-purple-500 hover:bg-purple-600"
           onClick={handleSearch}
+          disabled={isLoading || isRefetching}
         >
           <Search className="h-4 w-4 mr-2" />
           Search
         </Button>
       </div>
       
-      {isLoading && (
-        <div className="text-center py-4">
-          <div className="animate-spin h-5 w-5 border-2 border-purple-500 rounded-full border-t-transparent mx-auto"></div>
-          <p className="text-gray-400 mt-2">Searching for users...</p>
+      {(isLoading || isRefetching) && (
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex items-center justify-between bg-gray-800/30 p-3 rounded-lg">
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <div>
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-3 w-16 mt-1" />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-8 w-20" />
+              </div>
+            </div>
+          ))}
         </div>
       )}
       
-      {searchResults && searchResults.length > 0 ? (
+      {!isLoading && !isRefetching && searchResults && searchResults.length > 0 ? (
         <div className="space-y-3">
           {searchResults.map((profile) => (
             <motion.div
@@ -96,17 +136,12 @@ export function UserSearch() {
               className="flex items-center justify-between bg-gray-800/30 p-3 rounded-lg"
             >
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center overflow-hidden">
-                  {profile.avatar_url ? (
-                    <img 
-                      src={profile.avatar_url} 
-                      alt={profile.username || "user"} 
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
+                <Avatar className="h-10 w-10 border border-purple-500/30">
+                  <AvatarImage src={profile.avatar_url || undefined} alt={profile.username || "user"} />
+                  <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500">
                     <User className="h-5 w-5 text-white" />
-                  )}
-                </div>
+                  </AvatarFallback>
+                </Avatar>
                 <div>
                   <p className="font-medium">{profile.full_name || "User"}</p>
                   <p className="text-sm text-gray-400">@{profile.username || "username"}</p>
@@ -123,17 +158,40 @@ export function UserSearch() {
                 </Button>
                 <Button 
                   size="sm"
-                  className="bg-purple-500 hover:bg-purple-600"
-                  onClick={() => followUser(profile.id)}
+                  className={followStatus[profile.id] ? 
+                    "bg-purple-700 hover:bg-purple-800" : 
+                    "bg-purple-500 hover:bg-purple-600"}
+                  onClick={() => handleFollowUser(profile.id)}
+                  disabled={loadingFollow[profile.id]}
                 >
-                  <UserPlus className="h-4 w-4 mr-1" />
-                  Follow
+                  {loadingFollow[profile.id] ? (
+                    <div className="animate-spin h-4 w-4 border-2 border-white rounded-full border-t-transparent" />
+                  ) : followStatus[profile.id] ? (
+                    <>
+                      <UserCheck className="h-4 w-4 mr-1" />
+                      Following
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="h-4 w-4 mr-1" />
+                      Follow
+                    </>
+                  )}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-purple-400 hover:bg-purple-500/10 hover:text-purple-300"
+                  onClick={() => openMessages(profile.id)}
+                  title="Send message"
+                >
+                  <MessageSquare className="h-4 w-4" />
                 </Button>
               </div>
             </motion.div>
           ))}
         </div>
-      ) : searchResults && searchResults.length === 0 && searchTerm ? (
+      ) : !isLoading && !isRefetching && searchTerm ? (
         <div className="text-center py-4">
           <p className="text-gray-400">No users found matching "{searchTerm}"</p>
         </div>
