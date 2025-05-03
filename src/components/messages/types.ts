@@ -5,6 +5,12 @@ export interface MessageProps {
   content: string;
   time: string;
   isStarred?: boolean;
+  avatar?: string;
+  isUser?: boolean;
+  attachment?: {
+    name: string;
+    type: string;
+  };
   attachments?: Array<{
     type: "image" | "audio" | "video" | "document";
     url: string;
@@ -18,6 +24,7 @@ export interface ChatPreviewProps {
   time: string;
   active?: boolean;
   onClick: () => void;
+  avatar?: string;
 }
 
 export interface GroupMember {

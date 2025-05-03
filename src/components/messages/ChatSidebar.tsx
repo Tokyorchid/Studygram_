@@ -20,6 +20,15 @@ interface ChatSidebarProps {
   onCreateGroup: (groupId: string, groupName: string) => void;
 }
 
+interface DirectChat {
+  user_id: string;
+  username?: string;
+  full_name?: string;
+  avatar_url?: string;
+  last_message?: string;
+  last_message_time?: string;
+}
+
 const ChatSidebar = ({ 
   activeChat, 
   setActiveChat, 
@@ -30,7 +39,7 @@ const ChatSidebar = ({
 }: ChatSidebarProps) => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("groups");
-  const [directChats, setDirectChats] = useState<any[]>([]);
+  const [directChats, setDirectChats] = useState<DirectChat[]>([]);
   const navigate = useNavigate();
   
   // Fetch direct message conversations
@@ -47,7 +56,7 @@ const ChatSidebar = ({
         return;
       }
 
-      if (conversations) {
+      if (conversations && Array.isArray(conversations)) {
         // Fetch profile details for each contact
         const conversationsWithProfiles = await Promise.all(
           conversations.map(async (conv: any) => {
@@ -121,8 +130,8 @@ const ChatSidebar = ({
     if (!searchQuery) return directChats;
     
     return directChats.filter(chat => 
-      chat.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      chat.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (chat.username && chat.username.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (chat.full_name && chat.full_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (chat.last_message && chat.last_message.toLowerCase().includes(searchQuery.toLowerCase()))
     );
   };
@@ -212,7 +221,7 @@ const ChatSidebar = ({
             getFilteredDirectChats().map((chat) => (
               <ChatPreview
                 key={chat.user_id}
-                name={chat.full_name || chat.username}
+                name={chat.full_name || chat.username || "User"}
                 lastMessage={chat.last_message || "Start a conversation..."}
                 time={chat.last_message_time ? new Date(chat.last_message_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ""}
                 active={false}

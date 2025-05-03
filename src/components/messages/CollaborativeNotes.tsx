@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Save, Plus, Trash } from "lucide-react";
 
 interface CollaborativeNotesProps {
-  sessionId: string;
+  sessionId?: string;
 }
 
-const CollaborativeNotes = ({ sessionId }: CollaborativeNotesProps) => {
+const CollaborativeNotes = ({ sessionId = "default" }: CollaborativeNotesProps) => {
   const [notes, setNotes] = useState([
     { id: "1", content: "Key points from today's study session:", author: "You", timestamp: new Date().toISOString() }
   ]);

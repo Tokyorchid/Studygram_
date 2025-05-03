@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -6,19 +5,21 @@ import { Paperclip, Send, Mic, Image, FileText, Clock, X, Check } from "lucide-r
 import { MessageProps } from "./types";
 
 interface MessageInputProps {
-  activeChat: string;
-  messages: Record<string, MessageProps[]>;
-  setMessages: React.Dispatch<React.SetStateAction<Record<string, MessageProps[]>>>;
-  isRecording: boolean;
-  setIsRecording: React.Dispatch<React.SetStateAction<boolean>>;
+  activeChat?: string;
+  messages?: Record<string, MessageProps[]>;
+  setMessages?: React.Dispatch<React.SetStateAction<Record<string, MessageProps[]>>>;
+  isRecording?: boolean;
+  setIsRecording?: React.Dispatch<React.SetStateAction<boolean>>;
+  onSendMessage?: (content: string) => void; // Added this prop
 }
 
 const MessageInput = ({ 
   activeChat, 
   messages, 
   setMessages,
-  isRecording,
-  setIsRecording
+  isRecording = false,
+  setIsRecording = () => {},
+  onSendMessage
 }: MessageInputProps) => {
   const [newMessage, setNewMessage] = useState("");
   const [showAttachmentOptions, setShowAttachmentOptions] = useState(false);
@@ -26,19 +27,29 @@ const MessageInput = ({
 
   const handleSendMessage = () => {
     if (newMessage.trim()) {
-      const message: MessageProps = {
-        id: Date.now().toString(),
-        sender: "You",
-        content: newMessage,
-        time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-      };
+      if (onSendMessage) {
+        // Use the onSendMessage prop if provided
+        onSendMessage(newMessage);
+        setNewMessage("");
+        return;
+      }
       
-      setMessages({
-        ...messages,
-        [activeChat]: [...messages[activeChat], message]
-      });
-      
-      setNewMessage("");
+      // Fallback to original behavior
+      if (activeChat && messages && setMessages) {
+        const message: MessageProps = {
+          id: Date.now().toString(),
+          sender: "You",
+          content: newMessage,
+          time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+        };
+        
+        setMessages({
+          ...messages,
+          [activeChat]: [...(messages[activeChat] || []), message]
+        });
+        
+        setNewMessage("");
+      }
     }
   };
 

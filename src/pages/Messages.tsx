@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useLocation } from "react-router-dom";
@@ -20,6 +19,7 @@ import { UserSearch } from "@/components/UserSearch";
 const Messages = () => {
   const [activeChat, setActiveChat] = useState("study-group-a");
   const [isInCall, setIsInCall] = useState(false);
+  const [isVideoCall, setIsVideoCall] = useState(false);
   const [showStudyTools, setShowStudyTools] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeDM, setActiveDM] = useState<string | null>(null);
@@ -62,12 +62,22 @@ const Messages = () => {
 
   const startCall = (video: boolean) => {
     setIsInCall(true);
+    setIsVideoCall(video);
     toast.success(`Starting ${video ? "video" : "audio"} call`);
   };
 
   const endCall = () => {
     setIsInCall(false);
     toast.info("Call ended");
+  };
+
+  const getChatName = (chatId: string): string => {
+    switch (chatId) {
+      case "study-group-a": return "Study Group A";
+      case "math-squad": return "Math Squad";
+      case "science-team": return "Science Team";
+      default: return localStorage.getItem(`group-name-${chatId}`) || chatId;
+    }
   };
 
   const handleCreateGroup = (groupId: string, groupName: string) => {
@@ -92,7 +102,15 @@ const Messages = () => {
     }
 
     if (isInCall) {
-      return <CallView endCall={endCall} />;
+      return (
+        <CallView 
+          endCall={endCall} 
+          isVideoCall={isVideoCall}
+          activeChat={activeChat}
+          getChatName={getChatName}
+          toggleChat={() => setIsInCall(false)}
+        />
+      );
     }
 
     return (
@@ -167,7 +185,7 @@ const Messages = () => {
                       className="w-[300px] bg-gray-900/50 backdrop-blur-xl border-l border-purple-500/20 p-4 overflow-y-auto"
                     >
                       <div className="space-y-6">
-                        <CollaborativeNotes />
+                        <CollaborativeNotes sessionId={activeChat} />
                         <StudyPomodoroTimer />
                         <StudyFileSharing />
                         <StudyTips />

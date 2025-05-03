@@ -17,9 +17,10 @@ interface StudyPost {
 interface StudyPostsProps {
   posts: StudyPost[];
   onPostsUpdate: () => Promise<void>;
+  readOnly?: boolean;
 }
 
-export const StudyPosts = ({ posts, onPostsUpdate }: StudyPostsProps) => {
+export const StudyPosts = ({ posts, onPostsUpdate, readOnly = false }: StudyPostsProps) => {
   const [newPostCaption, setNewPostCaption] = useState("");
   const [uploadingPost, setUploadingPost] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -91,32 +92,34 @@ export const StudyPosts = ({ posts, onPostsUpdate }: StudyPostsProps) => {
           Study Timeline ✨
         </h2>
         
-        <div className="bg-white/5 p-4 rounded-xl mb-6">
-          <div className="flex items-center gap-4 mb-4">
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploadingPost}
-              className="flex items-center gap-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-            >
-              <ImagePlus size={20} />
-              {uploadingPost ? "Uploading..." : "Share Your Study Flex"}
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              className="hidden"
+        {!readOnly && (
+          <div className="bg-white/5 p-4 rounded-xl mb-6">
+            <div className="flex items-center gap-4 mb-4">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingPost}
+                className="flex items-center gap-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+              >
+                <ImagePlus size={20} />
+                {uploadingPost ? "Uploading..." : "Share Your Study Flex"}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+            </div>
+            <Textarea
+              value={newPostCaption}
+              onChange={(e) => setNewPostCaption(e.target.value)}
+              placeholder="Caption your study moment... make it slay!"
+              className="bg-white/5 border-none text-white resize-none"
+              rows={2}
             />
           </div>
-          <Textarea
-            value={newPostCaption}
-            onChange={(e) => setNewPostCaption(e.target.value)}
-            placeholder="Caption your study moment... make it slay!"
-            className="bg-white/5 border-none text-white resize-none"
-            rows={2}
-          />
-        </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {posts.map((post) => (

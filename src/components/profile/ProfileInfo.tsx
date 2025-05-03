@@ -1,4 +1,3 @@
-
 import { useRef, useState, useEffect } from "react";
 import { Camera, User, MessageSquare, UserPlus, UserCheck, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase, updateProfile, followUser, unfollowUser, isFollowing } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { toast as sonnerToast } from "sonner";
 
 interface ProfileData {
   username: string | null;
@@ -176,17 +176,17 @@ export const ProfileInfo = ({
         const { error } = await unfollowUser(profile.id);
         if (error) throw error;
         setIsFollowingUser(false);
-        toast.success("Unfollowed successfully");
+        sonnerToast.success("Unfollowed successfully");
       } else {
         // Follow
         const { error } = await followUser(profile.id);
         if (error) throw error;
         setIsFollowingUser(true);
-        toast.success("Now following " + (profile.username || "user"));
+        sonnerToast.success("Now following " + (profile.username || "user"));
       }
     } catch (error: any) {
       console.error("Error updating follow status:", error);
-      toast.error(error.message || "Failed to update follow status");
+      sonnerToast.error(error.message || "Failed to update follow status");
     } finally {
       setFollowLoading(false);
     }
