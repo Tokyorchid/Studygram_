@@ -36,6 +36,13 @@ interface ChatGroup {
   lastMessage?: MessageProps;
 }
 
+// Define conversation type returned from Supabase RPC
+interface Conversation {
+  user_id: string;
+  last_message?: string;
+  last_message_time?: string;
+}
+
 const ChatSidebar = ({ 
   activeChat, 
   setActiveChat, 
@@ -66,7 +73,7 @@ const ChatSidebar = ({
       if (conversations && Array.isArray(conversations)) {
         // Fetch profile details for each contact
         const conversationsWithProfiles = await Promise.all(
-          conversations.map(async (conv: any) => {
+          conversations.map(async (conv: Conversation) => {
             const otherUserId = conv.user_id;
             
             const { data: profile } = await supabase
