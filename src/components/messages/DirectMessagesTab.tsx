@@ -4,19 +4,11 @@ import { UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ChatPreview from "./ChatPreview";
 import { useNavigate } from "react-router-dom";
+import { DirectChat } from "./ChatSidebarTypes";
 
 interface DirectMessagesTabProps {
   searchQuery: string;
   directChats: DirectChat[];
-}
-
-interface DirectChat {
-  user_id: string;
-  username?: string;
-  full_name?: string;
-  avatar_url?: string;
-  last_message?: string;
-  last_message_time?: string;
 }
 
 const DirectMessagesTab = ({ searchQuery, directChats }: DirectMessagesTabProps) => {
