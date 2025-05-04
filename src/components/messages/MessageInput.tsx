@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -171,7 +172,7 @@ const MessageInput = ({
         <div className="flex-1">
           <Textarea
             placeholder="Type your message..."
-            className="bg-gray-800/50 border-gray-700 min-h-[60px] max-h-32"
+            className="bg-gray-800/50 border-gray-700 min-h-[60px] max-h-32 text-gray-100"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={handleKeyPress}
