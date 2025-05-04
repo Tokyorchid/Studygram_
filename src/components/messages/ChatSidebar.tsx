@@ -1,47 +1,14 @@
 
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, UserPlus, Users, MessageSquare } from "lucide-react";
+import { Search, Users, MessageSquare } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import ChatPreview from "./ChatPreview";
 import CreateGroupDialog from "./CreateGroupDialog";
-import { MessageProps } from "./types";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
-
-interface ChatSidebarProps {
-  activeChat: string;
-  setActiveChat: (chatId: string) => void;
-  searchQuery: string;
-  setSearchQuery: (query: string) => void;
-  messages: Record<string, MessageProps[]>;
-  onCreateGroup: (groupId: string, groupName: string) => void;
-}
-
-interface DirectChat {
-  user_id: string;
-  username?: string;
-  full_name?: string;
-  avatar_url?: string;
-  last_message?: string;
-  last_message_time?: string;
-}
-
-// Define a proper type for chat groups
-interface ChatGroup {
-  id: string;
-  name: string;
-  lastMessage?: MessageProps;
-}
-
-// Define conversation type returned from Supabase RPC
-interface Conversation {
-  user_id: string;
-  last_message?: string;
-  last_message_time?: string;
-}
+import GroupsTab from "./GroupsTab";
+import DirectMessagesTab from "./DirectMessagesTab";
+import { ChatSidebarProps, DirectChat, Conversation } from "./ChatSidebarTypes";
 
 const ChatSidebar = ({ 
   activeChat, 
@@ -54,7 +21,6 @@ const ChatSidebar = ({
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("groups");
   const [directChats, setDirectChats] = useState<DirectChat[]>([]);
-  const navigate = useNavigate();
   
   // Fetch direct message conversations
   useEffect(() => {
@@ -89,7 +55,7 @@ const ChatSidebar = ({
               ...conv,
               username: profile?.username || 'Unknown',
               full_name: profile?.full_name || 'Unknown User',
-              avatar_url: profile?.avatar_url
+              avatar_url: profile?.avatar_url || ""
             };
           })
         );
@@ -116,42 +82,6 @@ const ChatSidebar = ({
       supabase.removeChannel(channel);
     };
   }, []);
-  
-  const getFilteredGroups = (): ChatGroup[] => {
-    const allChats: ChatGroup[] = [
-      { id: "study-group-a", name: "Study Group A", lastMessage: messages["study-group-a"]?.slice(-1)[0] },
-      { id: "math-squad", name: "Math Squad", lastMessage: messages["math-squad"]?.slice(-1)[0] },
-      { id: "science-team", name: "Science Team", lastMessage: messages["science-team"]?.slice(-1)[0] }
-    ];
-    
-    // Add any custom groups that might have been created during the session
-    Object.keys(messages).forEach(chatId => {
-      if (!allChats.some(chat => chat.id === chatId) && chatId.startsWith("group-")) {
-        allChats.push({
-          id: chatId,
-          name: localStorage.getItem(`group-name-${chatId}`) || chatId,
-          lastMessage: messages[chatId]?.slice(-1)[0]
-        });
-      }
-    });
-    
-    if (!searchQuery) return allChats;
-    
-    return allChats.filter(chat => 
-      chat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (chat.lastMessage?.content && chat.lastMessage.content.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
-  };
-
-  const getFilteredDirectChats = () => {
-    if (!searchQuery) return directChats;
-    
-    return directChats.filter(chat => 
-      (chat.username && chat.username.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (chat.full_name && chat.full_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (chat.last_message && chat.last_message.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
-  };
 
   const handleCreateGroup = (groupId: string, groupName: string) => {
     // Store the group name in localStorage for this demo
@@ -159,10 +89,6 @@ const ChatSidebar = ({
     
     // Call the parent handler to create the group in the messages state
     onCreateGroup(groupId, groupName);
-  };
-
-  const handleDirectChatClick = (userId: string) => {
-    navigate(`/messages?userId=${userId}`);
   };
 
   return (
@@ -199,59 +125,21 @@ const ChatSidebar = ({
         </TabsList>
         
         <TabsContent value="groups" className="space-y-4">
-          <Button 
-            className="w-full bg-gradient-to-r from-purple-500 to-pink-500"
-            onClick={() => setCreateDialogOpen(true)}
-          >
-            <UserPlus className="mr-2 h-4 w-4" />
-            Create Study Group
-          </Button>
-          
-          <div className="space-y-2">
-            {getFilteredGroups().map(chat => (
-              <ChatPreview
-                key={chat.id}
-                name={chat.name}
-                lastMessage={chat.lastMessage?.content || "Start chatting..."}
-                time={chat.lastMessage?.time || ""}
-                active={activeChat === chat.id}
-                onClick={() => setActiveChat(chat.id)}
-                avatar=""
-              />
-            ))}
-            
-            {getFilteredGroups().length === 0 && searchQuery && (
-              <p className="text-center text-gray-400 py-2">No groups found matching "{searchQuery}"</p>
-            )}
-          </div>
+          <GroupsTab
+            activeChat={activeChat}
+            setActiveChat={setActiveChat}
+            searchQuery={searchQuery}
+            createDialogOpen={createDialogOpen}
+            setCreateDialogOpen={setCreateDialogOpen}
+            messages={messages}
+          />
         </TabsContent>
         
         <TabsContent value="direct" className="space-y-2">
-          <Button 
-            className="w-full bg-gradient-to-r from-purple-500 to-pink-500"
-            onClick={() => navigate('/messages?tab=find')}
-          >
-            <UserPlus className="mr-2 h-4 w-4" />
-            Find Users
-          </Button>
-          
-          {getFilteredDirectChats().length > 0 ? (
-            getFilteredDirectChats().map((chat) => (
-              <ChatPreview
-                key={chat.user_id}
-                name={chat.full_name || chat.username || "User"}
-                lastMessage={chat.last_message || "Start a conversation..."}
-                time={chat.last_message_time ? new Date(chat.last_message_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ""}
-                active={false}
-                onClick={() => handleDirectChatClick(chat.user_id)}
-                avatar={chat.avatar_url || ""}
-              />
-            ))
-          ) : searchQuery ? (
-            <p className="text-center text-gray-400 py-2">No direct messages found matching "{searchQuery}"</p>
-          ) : (
-            <p className="text-center text-gray-400 py-2">No direct messages yet. Find users to start chatting!</p>
-          )}
+          <DirectMessagesTab
+            searchQuery={searchQuery}
+            directChats={directChats}
+          />
         </TabsContent>
       </Tabs>
       
